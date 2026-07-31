@@ -1,0 +1,1230 @@
+{
+  "_readme": "Cada ejercicio tiene su 'huella biomecánica': patron (patrón de movimiento), musculoPrimario/musculosSecundarios (vocabulario de MuscleGroup en sweetswank-algorithm.ts), anguloGrados (ángulo articular de trabajo principal, el mismo dato que se ve en el AngleDiagram de la UI), equipoNecesario, unilateral, y contraindicaciones (zonas de InjuryZone — hombro, rodilla, espalda_baja, codo, cadera — que este ejercicio puede agravar, usado por el filtro de exclusión). Variantes elegidas por evidencia EMG/biomecánica: ángulos de banca inclinada/declinada para énfasis clavicular vs esternal del pecho, sentadilla frontal vs trasera para énfasis de cuádriceps vs cadena posterior, sumo vs convencional en peso muerto para reducir estrés lumbar, agarres de tracción para variar bíceps vs dorsal.",
+  "ejercicios": [
+    {
+      "id": "press_banca_plano_barra",
+      "nombre": "Press banca plano con barra",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "triceps",
+        "hombro"
+      ],
+      "anguloGrados": 0,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "codo"
+      ]
+    },
+    {
+      "id": "press_banca_inclinado_30_barra",
+      "nombre": "Press banca inclinado 30° con barra",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "hombro",
+        "triceps"
+      ],
+      "anguloGrados": 30,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "press_banca_inclinado_45_barra",
+      "nombre": "Press banca inclinado 45° con barra",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "hombro",
+        "triceps"
+      ],
+      "anguloGrados": 45,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "press_banca_declinado_barra",
+      "nombre": "Press banca declinado con barra",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "triceps"
+      ],
+      "anguloGrados": 15,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "codo"
+      ]
+    },
+    {
+      "id": "press_mancuernas_plano",
+      "nombre": "Press plano con mancuernas",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "hombro",
+        "triceps"
+      ],
+      "anguloGrados": 0,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "press_mancuernas_inclinado_30",
+      "nombre": "Press inclinado 30° con mancuernas",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "hombro",
+        "triceps"
+      ],
+      "anguloGrados": 30,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "press_maquina_pecho_convergente",
+      "nombre": "Press de pecho en máquina convergente",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "triceps"
+      ],
+      "anguloGrados": 10,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "press_smith_inclinado",
+      "nombre": "Press inclinado en máquina Smith",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "hombro",
+        "triceps"
+      ],
+      "anguloGrados": 30,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "flexiones_estandar",
+      "nombre": "Flexiones de pecho estándar",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "triceps",
+        "core"
+      ],
+      "anguloGrados": 0,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "flexiones_lastre",
+      "nombre": "Flexiones con lastre",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "triceps",
+        "core"
+      ],
+      "anguloGrados": 0,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "codo"
+      ]
+    },
+    {
+      "id": "fondos_paralelas_inclinado",
+      "nombre": "Fondos en paralelas (torso inclinado)",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "triceps",
+        "hombro"
+      ],
+      "anguloGrados": 25,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "aperturas_mancuerna_plano",
+      "nombre": "Aperturas con mancuernas en plano",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "hombro"
+      ],
+      "anguloGrados": 45,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "aperturas_polea_baja_alta",
+      "nombre": "Aperturas en polea de abajo hacia arriba",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "hombro"
+      ],
+      "anguloGrados": 55,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "cruce_poleas_altas",
+      "nombre": "Cruce de poleas altas",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "hombro"
+      ],
+      "anguloGrados": 15,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "press_banda_plano",
+      "nombre": "Press plano con banda de resistencia",
+      "patron": "empuje_horizontal",
+      "musculoPrimario": "pecho",
+      "musculosSecundarios": [
+        "triceps"
+      ],
+      "anguloGrados": 0,
+      "equipoNecesario": [
+        "banda"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "press_militar_barra_de_pie",
+      "nombre": "Press militar de pie con barra",
+      "patron": "empuje_vertical",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "triceps",
+        "core"
+      ],
+      "anguloGrados": 75,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "press_militar_barra_sentado",
+      "nombre": "Press militar sentado con barra",
+      "patron": "empuje_vertical",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "triceps"
+      ],
+      "anguloGrados": 80,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "press_mancuernas_sentado",
+      "nombre": "Press de hombro con mancuernas sentado",
+      "patron": "empuje_vertical",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "triceps"
+      ],
+      "anguloGrados": 65,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "press_arnold",
+      "nombre": "Press Arnold",
+      "patron": "empuje_vertical",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "triceps"
+      ],
+      "anguloGrados": 70,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "press_landmine_unilateral",
+      "nombre": "Press landmine unilateral",
+      "patron": "empuje_vertical",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "triceps",
+        "core"
+      ],
+      "anguloGrados": 55,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": true,
+      "contraindicaciones": []
+    },
+    {
+      "id": "press_maquina_hombro",
+      "nombre": "Press de hombro en máquina",
+      "patron": "empuje_vertical",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "triceps"
+      ],
+      "anguloGrados": 75,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "push_press",
+      "nombre": "Push press",
+      "patron": "empuje_vertical",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "triceps",
+        "cuadriceps"
+      ],
+      "anguloGrados": 80,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "rodilla"
+      ]
+    },
+    {
+      "id": "flexion_pike",
+      "nombre": "Flexión pike",
+      "patron": "empuje_vertical",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "triceps"
+      ],
+      "anguloGrados": 60,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "fondos_paralelas_vertical",
+      "nombre": "Fondos en paralelas (torso vertical)",
+      "patron": "empuje_vertical",
+      "musculoPrimario": "triceps",
+      "musculosSecundarios": [
+        "hombro"
+      ],
+      "anguloGrados": 5,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "codo"
+      ]
+    },
+    {
+      "id": "elevacion_frontal_mancuerna",
+      "nombre": "Elevación frontal con mancuernas",
+      "patron": "empuje_vertical",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "remo_barra_pendlay",
+      "nombre": "Remo Pendlay con barra",
+      "patron": "traccion_horizontal",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 0,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "remo_barra_yates",
+      "nombre": "Remo Yates (agarre supino)",
+      "patron": "traccion_horizontal",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 30,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "remo_mancuerna_unilateral",
+      "nombre": "Remo con mancuerna a una mano",
+      "patron": "traccion_horizontal",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 35,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": true,
+      "contraindicaciones": []
+    },
+    {
+      "id": "remo_polea_sentado_agarre_ancho",
+      "nombre": "Remo en polea sentado, agarre ancho",
+      "patron": "traccion_horizontal",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 15,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "remo_polea_sentado_agarre_estrecho",
+      "nombre": "Remo en polea sentado, agarre estrecho",
+      "patron": "traccion_horizontal",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 10,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "remo_maquina_convergente",
+      "nombre": "Remo en máquina convergente",
+      "patron": "traccion_horizontal",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 15,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "remo_en_t",
+      "nombre": "Remo en T con barra",
+      "patron": "traccion_horizontal",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 25,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "remo_invertido_peso_corporal",
+      "nombre": "Remo invertido",
+      "patron": "traccion_horizontal",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps",
+        "core"
+      ],
+      "anguloGrados": 40,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "face_pull_polea",
+      "nombre": "Face pull en polea",
+      "patron": "traccion_horizontal",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "espalda"
+      ],
+      "anguloGrados": 70,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "remo_banda",
+      "nombre": "Remo con banda de resistencia",
+      "patron": "traccion_horizontal",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 20,
+      "equipoNecesario": [
+        "banda"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "dominadas_pronas",
+      "nombre": "Dominadas pronas (agarre ancho)",
+      "patron": "traccion_vertical",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "codo"
+      ]
+    },
+    {
+      "id": "dominadas_supinas",
+      "nombre": "Dominadas supinas (chin-up)",
+      "patron": "traccion_vertical",
+      "musculoPrimario": "biceps",
+      "musculosSecundarios": [
+        "espalda"
+      ],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "codo"
+      ]
+    },
+    {
+      "id": "dominadas_agarre_neutro",
+      "nombre": "Dominadas con agarre neutro",
+      "patron": "traccion_vertical",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "codo"
+      ]
+    },
+    {
+      "id": "jalon_polea_ancho",
+      "nombre": "Jalón al pecho en polea, agarre ancho",
+      "patron": "traccion_vertical",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 85,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "jalon_polea_supino",
+      "nombre": "Jalón al pecho en polea, agarre supino",
+      "patron": "traccion_vertical",
+      "musculoPrimario": "biceps",
+      "musculosSecundarios": [
+        "espalda"
+      ],
+      "anguloGrados": 85,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "jalon_maquina",
+      "nombre": "Jalón dorsal en máquina",
+      "patron": "traccion_vertical",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 85,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "jalon_unilateral_polea",
+      "nombre": "Jalón unilateral en polea",
+      "patron": "traccion_vertical",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [
+        "biceps"
+      ],
+      "anguloGrados": 85,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": true,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "pull_over_polea_alta",
+      "nombre": "Pull-over en polea alta",
+      "patron": "traccion_vertical",
+      "musculoPrimario": "espalda",
+      "musculosSecundarios": [],
+      "anguloGrados": 75,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "sentadilla_trasera_barra",
+      "nombre": "Sentadilla trasera con barra",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [
+        "gluteo",
+        "isquiotibiales"
+      ],
+      "anguloGrados": 70,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "rodilla",
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "sentadilla_frontal_barra",
+      "nombre": "Sentadilla frontal con barra",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [
+        "core",
+        "gluteo"
+      ],
+      "anguloGrados": 85,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "rodilla",
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "sentadilla_goblet",
+      "nombre": "Sentadilla goblet",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [
+        "gluteo",
+        "core"
+      ],
+      "anguloGrados": 78,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "rodilla"
+      ]
+    },
+    {
+      "id": "sentadilla_bulgara",
+      "nombre": "Sentadilla búlgara",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [
+        "gluteo"
+      ],
+      "anguloGrados": 75,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": true,
+      "contraindicaciones": [
+        "rodilla"
+      ]
+    },
+    {
+      "id": "zancadas_caminando",
+      "nombre": "Zancadas caminando con mancuernas",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [
+        "gluteo",
+        "isquiotibiales"
+      ],
+      "anguloGrados": 70,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": true,
+      "contraindicaciones": [
+        "rodilla"
+      ]
+    },
+    {
+      "id": "prensa_piernas_45",
+      "nombre": "Prensa de piernas 45°",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [
+        "gluteo"
+      ],
+      "anguloGrados": 65,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "rodilla"
+      ]
+    },
+    {
+      "id": "sentadilla_hack_maquina",
+      "nombre": "Sentadilla hack en máquina",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [
+        "gluteo"
+      ],
+      "anguloGrados": 68,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "rodilla"
+      ]
+    },
+    {
+      "id": "step_up_banco",
+      "nombre": "Step-up con mancuernas",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [
+        "gluteo"
+      ],
+      "anguloGrados": 80,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": true,
+      "contraindicaciones": [
+        "rodilla"
+      ]
+    },
+    {
+      "id": "extension_cuadriceps_maquina",
+      "nombre": "Extensión de cuádriceps en máquina",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "rodilla"
+      ]
+    },
+    {
+      "id": "sentadilla_peso_corporal",
+      "nombre": "Sentadilla con peso corporal",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [
+        "gluteo"
+      ],
+      "anguloGrados": 85,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "sentadilla_sissy",
+      "nombre": "Sentadilla sissy",
+      "patron": "sentadilla",
+      "musculoPrimario": "cuadriceps",
+      "musculosSecundarios": [],
+      "anguloGrados": 95,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "rodilla"
+      ]
+    },
+    {
+      "id": "peso_muerto_convencional",
+      "nombre": "Peso muerto convencional",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "isquiotibiales",
+      "musculosSecundarios": [
+        "gluteo",
+        "espalda"
+      ],
+      "anguloGrados": 40,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "peso_muerto_sumo",
+      "nombre": "Peso muerto sumo",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "gluteo",
+      "musculosSecundarios": [
+        "cuadriceps",
+        "isquiotibiales"
+      ],
+      "anguloGrados": 55,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "rodilla",
+        "cadera"
+      ]
+    },
+    {
+      "id": "peso_muerto_rumano_barra",
+      "nombre": "Peso muerto rumano con barra",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "isquiotibiales",
+      "musculosSecundarios": [
+        "gluteo",
+        "espalda"
+      ],
+      "anguloGrados": 45,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "peso_muerto_rumano_mancuernas",
+      "nombre": "Peso muerto rumano con mancuernas",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "isquiotibiales",
+      "musculosSecundarios": [
+        "gluteo"
+      ],
+      "anguloGrados": 42,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "peso_muerto_unilateral",
+      "nombre": "Peso muerto a una pierna",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "isquiotibiales",
+      "musculosSecundarios": [
+        "gluteo",
+        "core"
+      ],
+      "anguloGrados": 45,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": true,
+      "contraindicaciones": [
+        "rodilla"
+      ]
+    },
+    {
+      "id": "hip_thrust_barra",
+      "nombre": "Hip thrust con barra",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "gluteo",
+      "musculosSecundarios": [
+        "isquiotibiales"
+      ],
+      "anguloGrados": 35,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "cadera"
+      ]
+    },
+    {
+      "id": "hip_thrust_maquina",
+      "nombre": "Hip thrust en máquina",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "gluteo",
+      "musculosSecundarios": [
+        "isquiotibiales"
+      ],
+      "anguloGrados": 35,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "cadera"
+      ]
+    },
+    {
+      "id": "buenos_dias_barra",
+      "nombre": "Buenos días con barra",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "isquiotibiales",
+      "musculosSecundarios": [
+        "espalda",
+        "gluteo"
+      ],
+      "anguloGrados": 38,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "curl_femoral_tumbado",
+      "nombre": "Curl femoral tumbado en máquina",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "isquiotibiales",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "rodilla"
+      ]
+    },
+    {
+      "id": "puente_gluteo_peso_corporal",
+      "nombre": "Puente de glúteo",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "gluteo",
+      "musculosSecundarios": [
+        "isquiotibiales"
+      ],
+      "anguloGrados": 30,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "kettlebell_swing",
+      "nombre": "Kettlebell swing",
+      "patron": "bisagra_cadera",
+      "musculoPrimario": "gluteo",
+      "musculosSecundarios": [
+        "isquiotibiales",
+        "core"
+      ],
+      "anguloGrados": 50,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "plancha_abdominal",
+      "nombre": "Plancha abdominal",
+      "patron": "core",
+      "musculoPrimario": "core",
+      "musculosSecundarios": [],
+      "anguloGrados": 0,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "plancha_lateral",
+      "nombre": "Plancha lateral",
+      "patron": "core",
+      "musculoPrimario": "core",
+      "musculosSecundarios": [],
+      "anguloGrados": 0,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": true,
+      "contraindicaciones": []
+    },
+    {
+      "id": "rueda_abdominal",
+      "nombre": "Rueda abdominal",
+      "patron": "core",
+      "musculoPrimario": "core",
+      "musculosSecundarios": [
+        "hombro"
+      ],
+      "anguloGrados": 10,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "pallof_press",
+      "nombre": "Pallof press",
+      "patron": "core",
+      "musculoPrimario": "core",
+      "musculosSecundarios": [
+        "hombro"
+      ],
+      "anguloGrados": 0,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": true,
+      "contraindicaciones": []
+    },
+    {
+      "id": "elevacion_piernas_colgado",
+      "nombre": "Elevación de piernas colgado",
+      "patron": "core",
+      "musculoPrimario": "core",
+      "musculosSecundarios": [
+        "hombro"
+      ],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ]
+    },
+    {
+      "id": "crunch_polea_alta",
+      "nombre": "Crunch en polea alta",
+      "patron": "core",
+      "musculoPrimario": "core",
+      "musculosSecundarios": [],
+      "anguloGrados": 45,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    },
+    {
+      "id": "dead_bug",
+      "nombre": "Dead bug",
+      "patron": "core",
+      "musculoPrimario": "core",
+      "musculosSecundarios": [],
+      "anguloGrados": 0,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": []
+    },
+    {
+      "id": "giro_ruso_disco",
+      "nombre": "Giro ruso con disco",
+      "patron": "core",
+      "musculoPrimario": "core",
+      "musculosSecundarios": [],
+      "anguloGrados": 30,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ]
+    }
+  ]
+}

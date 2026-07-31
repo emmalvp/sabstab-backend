@@ -1,0 +1,21 @@
+{
+  "name": "sabstab-backend",
+  "version": "0.1.0",
+  "description": "Backend real de SabStab — implementa sweetswank-api-spec.md",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed-exercises.js",
+    "db:start": "~/Applications/Postgres.app/Contents/Versions/17/bin/pg_ctl -D ~/sweetswank-pgdata -l ~/sweetswank-pgdata/logfile start",
+    "db:stop": "~/Applications/Postgres.app/Contents/Versions/17/bin/pg_ctl -D ~/sweetswank-pgdata stop"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.5",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.22.0"
+  }
+}
