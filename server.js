@@ -258,7 +258,7 @@ async function handleRequest(req, res) {
   </div>
   <div class="card">
     <strong>Sin la app instalada:</strong>
-    <p>Escríbenos a <a href="mailto:emmanuelapz@gmail.com">emmanuelapz@gmail.com</a> desde el correo de tu cuenta pidiendo el borrado. Lo procesamos en un plazo máximo de 30 días.</p>
+    <p>Escríbenos a <a href="mailto:sabstab.soporte@gmail.com">sabstab.soporte@gmail.com</a> desde el correo de tu cuenta pidiendo el borrado. Lo procesamos en un plazo máximo de 30 días.</p>
   </div>
   <p><strong>Qué se borra:</strong> tu correo, nombre, perfil físico (antropometría, objetivo, nivel), historial de lesiones, registros de 1RM, rutinas generadas, registro de sesiones de entrenamiento y dispositivos conectados. Todo se elimina de forma permanente, no queda respaldo.</p>
 </body>
