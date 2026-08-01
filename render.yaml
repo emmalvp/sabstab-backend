@@ -1,8 +1,10 @@
 # Blueprint de Render — crea la base de datos y el servidor de un solo
 # clic ("New +" → "Blueprint" → conectar este repo). No hace falta tocar
 # nada más: DATABASE_URL y JWT_SECRET se generan y conectan solos.
-# APPLE_CLIENT_ID queda vacío a propósito — agrégalo a mano en el
-# dashboard de Render cuando tengas Sign in with Apple configurado.
+# APPLE_CLIENT_ID y RESEND_API_KEY quedan vacíos a propósito — agrégalos
+# a mano en el dashboard de Render (Environment → Add) cuando tengas
+# Apple Developer / Resend configurados. Sin RESEND_API_KEY, recuperar
+# contraseña responde 501 en vez de fingir que mandó el correo.
 databases:
   - name: sabstab-db
     plan: free
@@ -25,4 +27,6 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: APPLE_CLIENT_ID
+        sync: false
+      - key: RESEND_API_KEY
         sync: false

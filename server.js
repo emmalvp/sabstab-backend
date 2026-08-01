@@ -7,6 +7,7 @@
  * obtienen y guardan los datos que entran/salen de él.
  */
 const http = require("http");
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { createRemoteJWKSet, jwtVerify } = require("jose");
@@ -14,6 +15,29 @@ const db = require("./db");
 const engine = require("./engine");
 
 const PORT = process.env.PORT || 4000;
+
+// --- Recuperar contraseña por email, vía Resend (https://resend.com).
+// Sin RESEND_API_KEY configurada, el endpoint responde 501 en vez de
+// fingir que mandó el correo. onboarding@resend.dev funciona sin
+// verificar un dominio propio — suficiente hasta que tengas uno.
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_FROM = process.env.RESEND_FROM || "SabStab <onboarding@resend.dev>";
+const APP_SCHEME = process.env.APP_SCHEME || "sabstab";
+
+async function enviarEmail({ to, subject, html }) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ from: RESEND_FROM, to, subject, html }),
+  });
+  if (!res.ok) {
+    const detalle = await res.text().catch(() => "");
+    throw new Error(`Resend respondió ${res.status}: ${detalle}`);
+  }
+}
 
 // --- Sign in with Apple: verifica el identityToken contra las claves
 // públicas reales de Apple (JWKS), no una simulación. APPLE_CLIENT_ID es
@@ -273,6 +297,54 @@ async function handleRequest(req, res) {
       }
     }
     return send(res, 200, { userId: user.id, token: makeToken(user.id), esNuevoUsuario });
+  }
+
+  if (req.method === "POST" && url.pathname === "/v1/auth/forgot-password") {
+    if (!body.email) {
+      return send(res, 400, { error: "datos_incompletos", mensaje: "Falta email" });
+    }
+    if (!RESEND_API_KEY) {
+      return send(res, 501, {
+        error: "email_no_configurado",
+        mensaje: "Define RESEND_API_KEY para habilitar la recuperación de contraseña por email.",
+      });
+    }
+    const usuario = await db.buscarUsuarioPorEmail(body.email);
+    // Responde 200 exista o no la cuenta — no revelar qué correos están registrados.
+    if (usuario) {
+      const tokenCrudo = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(tokenCrudo).digest("hex");
+      const expiraEn = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+      await db.crearTokenReset(usuario.id, tokenHash, expiraEn);
+      const link = `${APP_SCHEME}://reset-password?token=${tokenCrudo}`;
+      try {
+        await enviarEmail({
+          to: usuario.email,
+          subject: "Recupera tu contraseña de SabStab",
+          html: `<p>Tocá este link desde tu teléfono para elegir una contraseña nueva (vale por 1 hora):</p><p><a href="${link}">${link}</a></p><p>Si no pediste esto, ignora este correo.</p>`,
+        });
+      } catch (err) {
+        console.error("Error mandando email de recuperación:", err.message);
+      }
+    }
+    return send(res, 200, { ok: true });
+  }
+
+  if (req.method === "POST" && url.pathname === "/v1/auth/reset-password") {
+    if (!body.token || !body.newPassword) {
+      return send(res, 400, { error: "datos_incompletos", mensaje: "Faltan token o newPassword" });
+    }
+    if (body.newPassword.length < 6) {
+      return send(res, 400, { error: "datos_incompletos", mensaje: "La nueva contraseña debe tener al menos 6 caracteres" });
+    }
+    const tokenHash = crypto.createHash("sha256").update(body.token).digest("hex");
+    const registro = await db.buscarTokenReset(tokenHash);
+    if (!registro || registro.usadoEn || new Date(registro.expiraEn) < new Date()) {
+      return send(res, 401, { error: "token_invalido", mensaje: "El link de recuperación no es válido o ya expiró" });
+    }
+    await db.actualizarPassword(registro.userId, await hashPassword(body.newPassword));
+    await db.marcarTokenResetUsado(registro.id);
+    return send(res, 200, { ok: true });
   }
 
   // A partir de aquí, todo requiere token

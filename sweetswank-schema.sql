@@ -145,6 +145,23 @@ CREATE TABLE IF NOT EXISTS dispositivos_conectados (
   activo            BOOLEAN NOT NULL DEFAULT true
 );
 
+-- ---------------------------------------------------------------------
+-- 9. TOKENS DE RECUPERACIÓN DE CONTRASEÑA
+--    Se guarda el hash (sha256) del token, nunca el token en claro — si
+--    la base se filtra, los links de recuperación ya mandados no sirven
+--    para nada. Expiran a la hora; un solo uso (usado_en se marca al
+--    canjearlo).
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash        TEXT NOT NULL,
+  expira_en         TIMESTAMPTZ NOT NULL,
+  usado_en          TIMESTAMPTZ,
+  creado_en         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_hash ON password_reset_tokens(token_hash);
+
 -- =====================================================================
 -- Notas para el desarrollador:
 -- - `perfiles` está versionado (vigente_desde/vigente_hasta) en vez de

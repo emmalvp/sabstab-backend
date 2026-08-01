@@ -335,6 +335,29 @@ async function desactivarDispositivo(id, userId) {
   return rows[0] || null;
 }
 
+// ---------------------------------------------------------------------
+// RECUPERACIÓN DE CONTRASEÑA
+// ---------------------------------------------------------------------
+async function crearTokenReset(userId, tokenHash, expiraEn) {
+  await pool.query(
+    `INSERT INTO password_reset_tokens (user_id, token_hash, expira_en) VALUES ($1,$2,$3)`,
+    [userId, tokenHash, expiraEn]
+  );
+}
+
+async function buscarTokenReset(tokenHash) {
+  const { rows } = await pool.query(
+    `SELECT id, user_id AS "userId", expira_en AS "expiraEn", usado_en AS "usadoEn"
+     FROM password_reset_tokens WHERE token_hash = $1`,
+    [tokenHash]
+  );
+  return rows[0] || null;
+}
+
+async function marcarTokenResetUsado(id) {
+  await pool.query(`UPDATE password_reset_tokens SET usado_en = now() WHERE id = $1`, [id]);
+}
+
 module.exports = {
   pool,
   EmailEnUsoError,
@@ -367,4 +390,7 @@ module.exports = {
   constancia28dias,
   crearDispositivo,
   desactivarDispositivo,
+  crearTokenReset,
+  buscarTokenReset,
+  marcarTokenResetUsado,
 };

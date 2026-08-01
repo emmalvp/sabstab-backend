@@ -37,6 +37,28 @@ Auth: Bearer token (JWT) en el header `Authorization`, salvo donde se indique.
 { "userId": "uuid", "token": "jwt...", "esNuevoUsuario": true }
 ```
 
+### `POST /auth/forgot-password`
+```json
+// Request
+{ "email": "carlos@mail.com" }
+// Response 200 — siempre, exista o no la cuenta (no revela qué correos están registrados)
+{ "ok": true }
+```
+Si la cuenta existe, manda un email con un link `sabstab://reset-password?token=...`
+que abre la app directo en la pantalla de reset. El token vale 1 hora y
+es de un solo uso. `501 email_no_configurado` si el servidor no tiene
+`RESEND_API_KEY`.
+
+### `POST /auth/reset-password`
+```json
+// Request
+{ "token": "el token del link", "newPassword": "••••••••••" }
+// Response 200
+{ "ok": true }
+```
+`401 token_invalido` si el token no existe, ya se usó, o expiró.
+`400 datos_incompletos` si `newPassword` tiene menos de 6 caracteres.
+
 ---
 
 ## Perfil (onboarding)
