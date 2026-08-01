@@ -194,6 +194,21 @@ con Sign in with Apple no tienen contraseña todavía — para esas,
 `currentPassword` se ignora y esto fija la primera. `newPassword`
 requiere mínimo 6 caracteres (`400 datos_incompletos`).
 
+### `DELETE /auth/account`
+Requiere el JWT del login. Borra al usuario y, por `ON DELETE CASCADE`
+en el schema, todo lo asociado (perfiles, lesiones, registros_1rm,
+rutinas_dia, registros_sesion, dispositivos_conectados,
+password_reset_tokens). Irreversible, sin confirmación adicional del
+lado del servidor — la confirmación vive en el cliente.
+```json
+// Response 200
+{ "ok": true }
+```
+Existe para cumplir el requisito de Google Play de que toda app con
+cuentas ofrezca borrado de cuenta y datos. También hay una página web
+pública sin login en `GET /account-deletion` para quien ya desinstaló
+la app.
+
 ### `POST /devices/connect`
 ```json
 // Request

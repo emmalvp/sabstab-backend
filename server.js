@@ -221,6 +221,39 @@ async function handleRequest(req, res) {
     return send(res, 200, { ok: true, ejerciciosCargados: EXERCISE_DB.length });
   }
 
+  // Página pública (sin login) que exige Google Play: debe existir una forma
+  // de solicitar el borrado de cuenta y datos aunque la persona ya haya
+  // desinstalado la app.
+  if (req.method === "GET" && url.pathname === "/account-deletion") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    return res.end(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eliminar cuenta de SabStab</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 560px; margin: 40px auto; padding: 0 20px; line-height: 1.5; color: #23282F; background: #E7E3DA; }
+    h1 { font-size: 22px; }
+    a { color: #167D74; }
+    .card { background: #F7F5EF; border: 1px solid rgba(35,40,47,0.10); border-radius: 10px; padding: 16px 20px; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <h1>Eliminar tu cuenta de SabStab</h1>
+  <div class="card">
+    <strong>Desde la app (más rápido):</strong>
+    <p>Abre SabStab → Ajustes → Cuenta → "Eliminar cuenta". Se borra al instante, sin esperar respuesta de nadie.</p>
+  </div>
+  <div class="card">
+    <strong>Sin la app instalada:</strong>
+    <p>Escríbenos a <a href="mailto:emmanuelapz@gmail.com">emmanuelapz@gmail.com</a> desde el correo de tu cuenta pidiendo el borrado. Lo procesamos en un plazo máximo de 30 días.</p>
+  </div>
+  <p><strong>Qué se borra:</strong> tu correo, nombre, perfil físico (antropometría, objetivo, nivel), historial de lesiones, registros de 1RM, rutinas generadas, registro de sesiones de entrenamiento y dispositivos conectados. Todo se elimina de forma permanente, no queda respaldo.</p>
+</body>
+</html>`);
+  }
+
   const body = req.method !== "GET" && req.method !== "DELETE" ? await readBody(req) : null;
 
   // ---------------- AUTH ----------------
@@ -505,6 +538,11 @@ async function handleRequest(req, res) {
       }
     }
     await db.actualizarPassword(user.id, await hashPassword(body.newPassword));
+    return send(res, 200, { ok: true });
+  }
+
+  if (req.method === "DELETE" && url.pathname === "/v1/auth/account") {
+    await db.eliminarUsuario(user.id);
     return send(res, 200, { ok: true });
   }
 

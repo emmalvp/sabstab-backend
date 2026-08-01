@@ -104,6 +104,14 @@ async function actualizarPassword(userId, passwordHash) {
   await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, userId]);
 }
 
+// Borra al usuario; todas las tablas relacionadas (perfiles, lesiones,
+// registros_1rm, rutinas_dia, registros_sesion, dispositivos_conectados,
+// password_reset_tokens) tienen ON DELETE CASCADE, así que esto basta
+// para cumplir con el requisito de Google Play de eliminar cuenta y datos.
+async function eliminarUsuario(userId) {
+  await pool.query(`DELETE FROM users WHERE id = $1`, [userId]);
+}
+
 async function actualizarAjustesUsuario(id, cambios) {
   const columnas = { idioma: "idioma", unidadPeso: "unidad_peso", nombre: "nombre" };
   const sets = [];
@@ -370,6 +378,7 @@ module.exports = {
   buscarUsuarioPorId,
   actualizarAjustesUsuario,
   actualizarPassword,
+  eliminarUsuario,
   perfilVigente,
   cerrarPerfilVigente,
   crearPerfil,
