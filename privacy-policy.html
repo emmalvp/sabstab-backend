@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Política de privacidad — SabStab</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 680px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #23282F; background: #E7E3DA; }
+    h1 { font-size: 26px; }
+    h2 { font-size: 17px; margin-top: 34px; color: #167D74; }
+    a { color: #167D74; }
+    .updated { color: #565F6B; font-size: 13px; }
+    .card { background: #F7F5EF; border: 1px solid rgba(35,40,47,0.10); border-radius: 10px; padding: 16px 20px; margin: 16px 0; }
+    ul { padding-left: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Política de privacidad de SabStab</h1>
+  <p class="updated">Última actualización: 31 de julio de 2026</p>
+
+  <p>SabStab es una app de entrenamiento que genera rutinas de ejercicio
+  personalizadas a partir de tu antropometría, tus marcas de fuerza (1RM)
+  y tu historial de lesiones. Esta página explica qué datos recopilamos,
+  para qué los usamos y cómo puedes eliminarlos.</p>
+
+  <h2>Qué datos recopilamos</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Cuenta:</strong> correo electrónico, nombre, contraseña (guardada
+      con hash bcrypt, nunca en texto plano) o identificador de Sign in with
+      Apple si usas ese método.</li>
+      <li><strong>Perfil físico:</strong> altura, longitud de fémur, torso, brazo
+      y envergadura; objetivo de entrenamiento, nivel, días por semana,
+      duración de sesión y equipo disponible.</li>
+      <li><strong>Historial de lesiones:</strong> zona, lado, estado y
+      movimientos que agravan la lesión, si nos lo indicas.</li>
+      <li><strong>Marcas de fuerza (1RM):</strong> historial de tus levantamientos
+      reportados o estimados.</li>
+      <li><strong>Actividad de entrenamiento:</strong> rutinas generadas, series y
+      repeticiones completadas, carga usada, esfuerzo percibido (RPE) y
+      fecha de cada sesión.</li>
+      <li><strong>Preferencias:</strong> idioma, unidades de peso, si conectaste un
+      dispositivo (por ejemplo Apple Watch).</li>
+    </ul>
+  </div>
+
+  <h2>Para qué los usamos</h2>
+  <p>Únicamente para generar tus rutinas, ajustar cargas y mostrarte tu
+  progreso. No usamos tus datos para publicidad y no los vendemos a
+  nadie.</p>
+
+  <h2>Con quién los compartimos</h2>
+  <p>Con nadie, salvo los proveedores que hacen funcionar la app:</p>
+  <div class="card">
+    <ul>
+      <li><strong>Render</strong> — aloja el servidor y la base de datos.</li>
+      <li><strong>Resend</strong> — envía el correo de recuperación de contraseña
+      (solo recibe tu email y el contenido de ese correo puntual).</li>
+    </ul>
+  </div>
+
+  <h2>Seguridad</h2>
+  <p>Las contraseñas se guardan con bcrypt (nunca en texto plano). Las
+  sesiones usan tokens firmados (JWT) que expiran a los 30 días. Los
+  links de recuperación de contraseña expiran en 1 hora, son de un solo
+  uso, y en la base solo se guarda su hash, nunca el link en claro.</p>
+
+  <h2>Cuánto tiempo guardamos tus datos</h2>
+  <p>Mientras tu cuenta exista. Si eliminas tu cuenta, se borra todo de
+  forma permanente e inmediata.</p>
+
+  <h2>Cómo eliminar tu cuenta y tus datos</h2>
+  <p>Desde la app: Ajustes → Cuenta → "Eliminar cuenta" (inmediato). Sin
+  la app instalada, escribe a
+  <a href="mailto:emmanuelapz@gmail.com">emmanuelapz@gmail.com</a> desde
+  el correo de tu cuenta — lo procesamos en máximo 30 días. Más detalle
+  en <a href="https://sabstab-backend.onrender.com/account-deletion">esta página</a>.</p>
+
+  <h2>Menores de edad</h2>
+  <p>SabStab no está dirigida a menores de 16 años y no recopilamos a
+  sabiendas datos de menores de esa edad.</p>
+
+  <h2>Contacto</h2>
+  <p>Cualquier duda sobre esta política o tus datos, escribe a
+  <a href="mailto:emmanuelapz@gmail.com">emmanuelapz@gmail.com</a>.</p>
+</body>
+</html>

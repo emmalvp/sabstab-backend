@@ -8,11 +8,17 @@
  */
 const http = require("http");
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { createRemoteJWKSet, jwtVerify } = require("jose");
 const db = require("./db");
 const engine = require("./engine");
+
+// Se lee una sola vez al arrancar — es una página estática, no hace falta
+// releerla del disco en cada request.
+const PRIVACY_POLICY_HTML = fs.readFileSync(path.join(__dirname, "privacy-policy.html"), "utf8");
 
 const PORT = process.env.PORT || 4000;
 
@@ -219,6 +225,11 @@ async function handleRequest(req, res) {
   // saber si el proceso está vivo antes de enrutarle tráfico real.
   if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
     return send(res, 200, { ok: true, ejerciciosCargados: EXERCISE_DB.length });
+  }
+
+  if (req.method === "GET" && url.pathname === "/privacy-policy") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    return res.end(PRIVACY_POLICY_HTML);
   }
 
   // Página pública (sin login) que exige Google Play: debe existir una forma
