@@ -295,8 +295,16 @@ async function sustituirEjercicioDeRutina(rutinaEjercicioId, userId, nuevoEjerci
   return rows[0] || null;
 }
 
+// Una "sesión" es un día calendario con al menos una serie registrada —
+// no hay botón de "terminar sesión" en la app, así que no existe un
+// límite explícito entre una sesión y otra más que el propio día. Antes
+// esto contaba filas de registros_sesion (series individuales), lo cual
+// inflaba muchísimo el número real de sesiones entrenadas.
 async function contarSesionesDeUsuario(userId) {
-  const { rows } = await pool.query(`SELECT COUNT(*)::int AS n FROM registros_sesion WHERE user_id = $1`, [userId]);
+  const { rows } = await pool.query(
+    `SELECT COUNT(DISTINCT date_trunc('day', completada_en))::int AS n FROM registros_sesion WHERE user_id = $1`,
+    [userId]
+  );
   return rows[0].n;
 }
 
