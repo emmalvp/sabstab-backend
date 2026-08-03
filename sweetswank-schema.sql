@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS perfiles (
   torso_cm          NUMERIC(5,1) NOT NULL,
   brazo_cm          NUMERIC(5,1) NOT NULL,
   envergadura_cm    NUMERIC(5,1),
+  edad              SMALLINT CHECK (edad BETWEEN 13 AND 100),
+  peso_corporal_kg  NUMERIC(5,1) CHECK (peso_corporal_kg > 0),
   objetivo          TEXT NOT NULL CHECK (objetivo IN ('hipertrofia', 'fuerza', 'ambos')),
   nivel             TEXT NOT NULL CHECK (nivel IN ('principiante', 'intermedio', 'avanzado')),
   dias_por_semana   SMALLINT NOT NULL CHECK (dias_por_semana BETWEEN 1 AND 7),
@@ -44,6 +46,12 @@ CREATE TABLE IF NOT EXISTS perfiles (
   vigente_hasta     TIMESTAMPTZ -- NULL = perfil actual
 );
 CREATE INDEX IF NOT EXISTS idx_perfiles_user_vigente ON perfiles(user_id) WHERE vigente_hasta IS NULL;
+
+-- edad/peso_corporal_kg se agregaron después del primer despliegue — ALTER
+-- explícito para que node migrate.js siga siendo seguro de correr contra
+-- una base ya existente (CREATE TABLE IF NOT EXISTS no agrega columnas).
+ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS edad SMALLINT CHECK (edad BETWEEN 13 AND 100);
+ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS peso_corporal_kg NUMERIC(5,1) CHECK (peso_corporal_kg > 0);
 
 -- ---------------------------------------------------------------------
 -- 3. LESIONES (una fila por lesión, un usuario puede tener varias)

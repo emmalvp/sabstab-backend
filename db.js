@@ -134,6 +134,7 @@ async function actualizarAjustesUsuario(id, cambios) {
 async function perfilVigente(userId) {
   const { rows } = await pool.query(
     `SELECT id, altura_cm AS "alturaCm", femur_cm AS "femurCm", torso_cm AS "torsoCm", brazo_cm AS "brazoCm",
+            edad, peso_corporal_kg AS "pesoCorporalKg",
             objetivo, nivel, dias_por_semana AS "diasPorSemana", duracion_sesion_min AS "duracionSesionMin",
             equipo_disponible AS "equipoDisponible", vigente_desde AS "vigenteDesde"
      FROM perfiles WHERE user_id = $1 AND vigente_hasta IS NULL`,
@@ -148,10 +149,10 @@ async function cerrarPerfilVigente(userId, client = pool) {
 
 async function crearPerfil(userId, p, client = pool) {
   const { rows } = await client.query(
-    `INSERT INTO perfiles (user_id, altura_cm, femur_cm, torso_cm, brazo_cm, objetivo, nivel, dias_por_semana, duracion_sesion_min, equipo_disponible)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    `INSERT INTO perfiles (user_id, altura_cm, femur_cm, torso_cm, brazo_cm, edad, peso_corporal_kg, objetivo, nivel, dias_por_semana, duracion_sesion_min, equipo_disponible)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
      RETURNING id, vigente_desde AS "vigenteDesde"`,
-    [userId, p.alturaCm, p.femurCm, p.torsoCm, p.brazoCm, p.objetivo, p.nivel, p.diasPorSemana, p.duracionSesionMin, p.equipoDisponible]
+    [userId, p.alturaCm, p.femurCm, p.torsoCm, p.brazoCm, p.edad, p.pesoCorporalKg, p.objetivo, p.nivel, p.diasPorSemana, p.duracionSesionMin, p.equipoDisponible]
   );
   return rows[0];
 }
@@ -279,6 +280,21 @@ async function rutinaEjercicioPorId(id) {
   return rows[0] || null;
 }
 
+// Sustituye el ejercicio de una fila de rutina_ejercicios por otro (ej.
+// una alternativa elegida en la app porque el original estaba ocupado).
+// Verifica dueño vía el join a rutinas_dia — nunca confiar en el id solo.
+async function sustituirEjercicioDeRutina(rutinaEjercicioId, userId, nuevoEjercicioId) {
+  const { rows } = await pool.query(
+    `UPDATE rutina_ejercicios re
+     SET ejercicio_id = $3
+     FROM rutinas_dia rd
+     WHERE re.id = $1 AND re.rutina_dia_id = rd.id AND rd.user_id = $2
+     RETURNING re.id, re.ejercicio_id AS "ejercicioId"`,
+    [rutinaEjercicioId, userId, nuevoEjercicioId]
+  );
+  return rows[0] || null;
+}
+
 async function contarSesionesDeUsuario(userId) {
   const { rows } = await pool.query(`SELECT COUNT(*)::int AS n FROM registros_sesion WHERE user_id = $1`, [userId]);
   return rows[0].n;
@@ -394,6 +410,7 @@ module.exports = {
   ejerciciosDeRutinaDia,
   crearRegistroSesion,
   rutinaEjercicioPorId,
+  sustituirEjercicioDeRutina,
   contarSesionesDeUsuario,
   volumenSemanal,
   constancia28dias,

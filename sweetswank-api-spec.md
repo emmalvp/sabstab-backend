@@ -71,6 +71,8 @@ sobrescribe una fila existente.
 // Request — mismo shape que UserProfile en sweetswank-algorithm.ts
 {
   "antropometria": { "alturaCm": 178, "femurCm": 46.2, "torsoCm": 42, "brazoCm": 62 },
+  "edad": 32,
+  "pesoCorporalKg": 80,
   "oneRM": { "sentadilla": 140, "pressBanca": 100, "pesoMuerto": 180, "pressMilitar": 60 },
   "lesiones": [
     { "zona": "hombro", "lado": "derecho", "estado": "resuelta_con_precaucion", "movimientoQueAgrava": "" }
@@ -122,6 +124,36 @@ del usuario y la tabla `ejercicios` completa, guarda el resultado en
 
 ### `GET /routines/:rutinaDiaId` — releer una rutina ya generada (no recalcula)
 
+### `GET /routines/schedule` — calendario semanal + si toca cambiar de rutina
+Calcula, a partir de `diasPorSemana` del perfil vigente, qué días de una
+semana de 7 (0=lunes … 6=domingo) son de entreno y cuáles de descanso —
+repartidos lo más parejo posible (mismo principio que un ritmo euclidiano)
+para no juntar sesiones seguidas sin recuperación. También decide si es
+momento de cambiar de rutina: por tiempo (≥ 6 semanas con el mismo perfil,
+el rango típico de un mesociclo antes de que aparezca *accommodation*) o por
+estancamiento (el 1RM de algún levantamiento no subió en al menos 3 semanas
+dentro de las últimas 6).
+```json
+// Response 200
+{
+  "diasPorSemana": 4,
+  "programa": [
+    { "diaSemana": 0, "tipo": null, "descanso": true },
+    { "diaSemana": 1, "tipo": "Empuje", "descanso": false },
+    { "diaSemana": 2, "tipo": null, "descanso": true },
+    { "diaSemana": 3, "tipo": "Tiron", "descanso": false },
+    { "diaSemana": 4, "tipo": null, "descanso": true },
+    { "diaSemana": 5, "tipo": "Piernas", "descanso": false },
+    { "diaSemana": 6, "tipo": "Empuje", "descanso": false }
+  ],
+  "diaSemanaHoy": 3,
+  "diaSugeridoHoy": "Tiron",
+  "semanasEnRutinaActual": 5,
+  "sugerenciaCambiarRutina": false,
+  "motivoCambio": null // "tiempo" | "estancamiento" | null
+}
+```
+
 ---
 
 ## Alternativas
@@ -136,6 +168,19 @@ Corre `buscarAlternativas()` en el servidor con el perfil vigente
 ```
 
 ### `GET /exercises?q=press` — búsqueda libre (autocompletar el buscador)
+
+### `PATCH /routines/exercises/:rutinaEjercicioId` — sustituir un ejercicio de la rutina de hoy
+```json
+// Request
+{ "ejercicioId": "press_mancuernas" }
+// Response 200
+{ "ok": true, "rutinaEjercicioId": "uuid", "ejercicioId": "press_mancuernas" }
+```
+Usado desde AlternativasScreen cuando el usuario confirma reemplazar el
+ejercicio ocupado por una alternativa. Verifica que la fila pertenezca
+al usuario autenticado (join a `rutinas_dia.user_id`) antes de
+actualizar — `404 rutina_ejercicio_no_encontrado` si no es suya o no
+existe.
 
 ---
 
@@ -235,3 +280,13 @@ endpoint solo registra que el dispositivo está vinculado.
   spam de registros) — no aplica al resto.
 - Todos los endpoints salvo `/auth/*` requieren el JWT del login; el
   servidor extrae `userId` del token, nunca del body.
+- **`edad` y `pesoCorporalKg` sí se usan en el motor**, no son campos
+  decorativos: (1) arreglan un bug real — antes, un ejercicio sin carga
+  externa (ej. flexiones) heredaba el %1RM de un movimiento con barra del
+  mismo patrón (press banca), prescribiendo un peso en kg sin sentido para
+  un movimiento de peso corporal; ahora esos ejercicios progresan por reps
+  y, con `pesoCorporalKg` conocido, la nota sugiere un salto de carga
+  externa (~7.5% del peso corporal) para cuando el trainee supere el techo
+  del rango de reps. (2) `edad ≥ 50` agrega una nota de calentamiento
+  específico extra (Fragala et al. 2019, NSCA) — no cambia la
+  prescripción numérica, solo el contexto.

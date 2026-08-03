@@ -140,6 +140,8 @@ async function perfilParaMotor(userId) {
       torsoCm: Number(perfil.torsoCm),
       brazoCm: Number(perfil.brazoCm),
     },
+    edad: perfil.edad != null ? Number(perfil.edad) : null,
+    pesoCorporalKg: perfil.pesoCorporalKg != null ? Number(perfil.pesoCorporalKg) : null,
     oneRM,
     lesiones,
     objetivo: perfil.objetivo,
@@ -194,6 +196,8 @@ function readBody(req) {
 function validarPerfilRequest(body) {
   const faltantes = [];
   if (!body.antropometria) faltantes.push("antropometria");
+  if (!body.edad) faltantes.push("edad");
+  if (!body.pesoCorporalKg) faltantes.push("pesoCorporalKg");
   if (!body.oneRM) faltantes.push("oneRM");
   if (!body.objetivo) faltantes.push("objetivo");
   if (!body.nivel) faltantes.push("nivel");
@@ -409,6 +413,8 @@ async function handleRequest(req, res) {
         femurCm: body.antropometria.femurCm,
         torsoCm: body.antropometria.torsoCm,
         brazoCm: body.antropometria.brazoCm,
+        edad: body.edad,
+        pesoCorporalKg: body.pesoCorporalKg,
         objetivo: body.objetivo,
         nivel: body.nivel,
         diasPorSemana: body.diasPorSemana,
@@ -469,7 +475,42 @@ async function handleRequest(req, res) {
     return send(res, 200, { rutinaDiaId, nombreDia, ejercicios: ejerciciosGuardados, supersetsSugeridos });
   }
 
-  if (req.method === "GET" && url.pathname.startsWith("/v1/routines/") && url.pathname !== "/v1/routines/today") {
+  if (req.method === "GET" && url.pathname === "/v1/routines/schedule") {
+    const perfil = await db.perfilVigente(user.id);
+    if (!perfil) return send(res, 404, { error: "sin_perfil", mensaje: "Completa tu perfil primero" });
+
+    const programa = engine.generarProgramaSemanal(perfil.diasPorSemana);
+    const diaSemanaHoy = (new Date().getDay() + 6) % 7; // JS: 0=domingo → ISO: 0=lunes
+    const diaSugeridoHoy = programa.find((d) => d.diaSemana === diaSemanaHoy)?.tipo || null;
+
+    const msPorDia = 24 * 60 * 60 * 1000;
+    const semanasEnRutinaActual = Math.floor((Date.now() - new Date(perfil.vigenteDesde).getTime()) / (7 * msPorDia));
+
+    let motivoCambio = null;
+    if (semanasEnRutinaActual >= 6) {
+      motivoCambio = "tiempo";
+    } else {
+      for (const [, claveStorage] of LEVANTAMIENTOS) {
+        const historial = await db.historial1RM(user.id, claveStorage);
+        if (engine.detectarEstancamiento(historial)) {
+          motivoCambio = "estancamiento";
+          break;
+        }
+      }
+    }
+
+    return send(res, 200, {
+      diasPorSemana: perfil.diasPorSemana,
+      programa,
+      diaSemanaHoy,
+      diaSugeridoHoy,
+      semanasEnRutinaActual,
+      sugerenciaCambiarRutina: motivoCambio !== null,
+      motivoCambio,
+    });
+  }
+
+  if (req.method === "GET" && url.pathname.startsWith("/v1/routines/") && url.pathname !== "/v1/routines/today" && url.pathname !== "/v1/routines/schedule") {
     const rutinaDiaId = url.pathname.split("/")[3];
     const rutinaDia = await db.rutinaDiaDeUsuario(rutinaDiaId, user.id);
     if (!rutinaDia) return send(res, 404, { error: "rutina_no_encontrada" });
@@ -481,6 +522,17 @@ async function handleRequest(req, res) {
       cargaKg: re.cargaKg, nota: re.nota, advertenciaLesion: re.advertenciaLesion,
     }));
     return send(res, 200, { rutinaDiaId: rutinaDia.id, nombreDia: rutinaDia.nombreDia, ejercicios });
+  }
+
+  if (req.method === "PATCH" && url.pathname.startsWith("/v1/routines/exercises/")) {
+    const rutinaEjercicioId = url.pathname.split("/")[4];
+    if (!body.ejercicioId) return send(res, 400, { error: "datos_incompletos", mensaje: "Falta ejercicioId" });
+    if (!EXERCISE_DB.some((e) => e.id === body.ejercicioId)) {
+      return send(res, 400, { error: "ejercicio_invalido", mensaje: "Ese ejercicio no existe" });
+    }
+    const actualizado = await db.sustituirEjercicioDeRutina(rutinaEjercicioId, user.id, body.ejercicioId);
+    if (!actualizado) return send(res, 404, { error: "rutina_ejercicio_no_encontrado" });
+    return send(res, 200, { ok: true, rutinaEjercicioId: actualizado.id, ejercicioId: actualizado.ejercicioId });
   }
 
   // ---------------- ALTERNATIVAS ----------------

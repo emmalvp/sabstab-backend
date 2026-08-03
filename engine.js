@@ -46,8 +46,12 @@ function filtrarPorEquipo(ejercicios, equipoDisponible) {
   return ejercicios.filter((ej) => ej.equipoNecesario.every((eq) => (equipoDisponible || []).includes(eq)));
 }
 
+function esSoloPesoCorporal(ejercicio) {
+  return ejercicio.equipoNecesario.length === 1 && ejercicio.equipoNecesario[0] === "peso_corporal";
+}
+
 function generarNotasBiomecanicas(ejercicio, profile) {
-  const { antropometria, lesiones } = profile;
+  const { antropometria, lesiones, edad, pesoCorporalKg } = profile;
   if (ejercicio.patron === "sentadilla" && antropometria.femurCm && antropometria.torsoCm) {
     const ratio = antropometria.femurCm / antropometria.torsoCm;
     if (ratio > 1.05) return "Vas a inclinar más el torso al bajar — es normal con tu proporción de piernas.";
@@ -56,6 +60,19 @@ function generarNotasBiomecanicas(ejercicio, profile) {
     (l) => l.estado === "resuelta_con_precaucion" && ejercicio.contraindicaciones.includes(l.zona)
   );
   if (lesionRelevante) return `Movimiento controlado: cuida el rango final por tu historial en ${lesionRelevante.zona}.`;
+  // Sin 1RM de referencia (ver oneRMRelevante) la progresión es por reps, no
+  // por kg — así que la carga externa se sugiere como un salto ligado a tu
+  // propio peso corporal, en vez de un número arbitrario.
+  if (esSoloPesoCorporal(ejercicio) && pesoCorporalKg) {
+    const saltoKg = Math.round(pesoCorporalKg * 0.075 * 10) / 10;
+    return `Ejercicio con tu propio peso: cuando superes el techo del rango de reps a RPE ≤8, en vez de sumar más reps agrega ~${saltoKg}kg externos (chaleco o cinturón lastrado) y vuelve al piso del rango.`;
+  }
+  // Fragala et al. 2019 (NSCA position stand, entrenamiento de fuerza en
+  // adultos mayores): el riesgo tendinoso/articular baja con más
+  // calentamiento específico, sin necesidad de tocar la prescripción numérica.
+  if (edad && edad >= 50) {
+    return "A tu edad, una serie extra de calentamiento específico (misma técnica, peso ligero) antes de la serie de trabajo reduce el riesgo de molestias sin cambiar tu prescripción.";
+  }
   return "";
 }
 
@@ -97,6 +114,11 @@ function seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile) {
 }
 
 function oneRMRelevante(ejercicio, oneRM) {
+  // Un ejercicio sin carga externa (solo peso corporal) no tiene relación
+  // válida con el 1RM de un movimiento con barra del mismo patrón — pedirle
+  // a alguien "8-12 reps a 72kg" en una flexión no tiene sentido. Progresa
+  // por reps (rama sin oneRMBase de prescribirCarga), no por %1RM.
+  if (esSoloPesoCorporal(ejercicio)) return null;
   switch (ejercicio.patron) {
     case "sentadilla": return oneRM.sentadilla || null;
     case "bisagra_cadera": return oneRM.pesoMuerto || null;
@@ -214,6 +236,53 @@ function sugerirSupersets(prescritos) {
   return pares;
 }
 
+// ---------------------------------------------------------------------------
+// PROGRAMA SEMANAL — qué días son de entreno y cuáles de descanso
+// ---------------------------------------------------------------------------
+// Reparte diasPorSemana sesiones lo más uniformemente posible a lo largo de
+// una semana de 7 días (mismo principio que un ritmo euclidiano / algoritmo
+// de Bresenham: floor((d+1)*N/7) > floor(d*N/7) marca el día d como "activo"
+// exactamente N veces en 7 pasos, separados lo más parejo que permite la
+// aritmética entera). Espaciar el entreno evita juntar sesiones seguidas del
+// mismo grupo muscular sin recuperación. diaSemana: 0=lunes … 6=domingo.
+const CICLO_SPLIT = ["Empuje", "Tiron", "Piernas"];
+function generarProgramaSemanal(diasPorSemana) {
+  const n = Math.min(7, Math.max(1, diasPorSemana));
+  let entrenoIndex = 0;
+  const programa = [];
+  for (let d = 0; d < 7; d++) {
+    const esEntreno = Math.floor(((d + 1) * n) / 7) > Math.floor((d * n) / 7);
+    if (esEntreno) {
+      programa.push({ diaSemana: d, tipo: CICLO_SPLIT[entrenoIndex % CICLO_SPLIT.length], descanso: false });
+      entrenoIndex++;
+    } else {
+      programa.push({ diaSemana: d, tipo: null, descanso: true });
+    }
+  }
+  return programa;
+}
+
+// ---------------------------------------------------------------------------
+// DETECCIÓN DE ESTANCAMIENTO — señal para sugerir cambiar de rutina
+// ---------------------------------------------------------------------------
+// Mira solo los puntos dentro de los últimos `ventanaDias` (por defecto 6
+// semanas): si el primero y el último de esa ventana están separados por al
+// menos `minDiasEntrePuntos` (3 semanas) y el valor no subió, es una meseta
+// real y no solo falta de datos recientes. Evidencia: los mesociclos de
+// fuerza/hipertrofia se planifican en bloques de 4-6 semanas precisamente
+// porque accommodation (pérdida de respuesta al mismo estímulo) suele
+// aparecer en ese rango — cambiar ejercicios o variables reinicia el estímulo.
+function detectarEstancamiento(historial, ventanaDias = 42, minDiasEntrePuntos = 21) {
+  const ahora = Date.now();
+  const enVentana = historial.filter((h) => (ahora - new Date(h.fecha).getTime()) / 86400000 <= ventanaDias);
+  if (enVentana.length < 2) return false;
+  const primero = enVentana[0];
+  const ultimo = enVentana[enVentana.length - 1];
+  const diasTranscurridos = (new Date(ultimo.fecha) - new Date(primero.fecha)) / 86400000;
+  if (diasTranscurridos < minDiasEntrePuntos) return false;
+  return ultimo.valor <= primero.valor;
+}
+
 module.exports = {
   EXERCISE_DB,
   estimate1RM,
@@ -222,5 +291,7 @@ module.exports = {
   ajustarProximaCarga,
   redondearCarga,
   sugerirSupersets,
+  generarProgramaSemanal,
+  detectarEstancamiento,
   SinEjerciciosDisponiblesError,
 };
