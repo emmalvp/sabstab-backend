@@ -12,6 +12,14 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgresql://localhost:5432/sweetswank",
 });
 
+// Migraciones idempotentes que corren en cada arranque del servidor — así
+// no dependemos de aplicar sweetswank-schema.sql a mano en producción cada
+// vez que se agrega una columna (ver server.js `start()`).
+async function migrar() {
+  await pool.query(`ALTER TABLE rutinas_dia ADD COLUMN IF NOT EXISTS fecha_local DATE NOT NULL DEFAULT CURRENT_DATE`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_rutinas_dia_usuario_fecha ON rutinas_dia(user_id, nombre_dia, fecha_local)`);
+}
+
 class EmailEnUsoError extends Error {
   constructor() {
     super("Ese correo ya está registrado");
@@ -223,12 +231,25 @@ async function todosLosEjercicios() {
 // ---------------------------------------------------------------------
 // RUTINAS
 // ---------------------------------------------------------------------
-async function crearRutinaDia(userId, nombreDia, client = pool) {
+async function crearRutinaDia(userId, nombreDia, fechaLocal, client = pool) {
   const { rows } = await client.query(
-    `INSERT INTO rutinas_dia (user_id, nombre_dia) VALUES ($1,$2) RETURNING id`,
-    [userId, nombreDia]
+    `INSERT INTO rutinas_dia (user_id, nombre_dia, fecha_local) VALUES ($1,$2,COALESCE($3, CURRENT_DATE)) RETURNING id`,
+    [userId, nombreDia, fechaLocal || null]
   );
   return rows[0].id;
+}
+
+// Busca una rutina ya generada hoy para este usuario+día — evita que abrir
+// la pestaña Rutina genere una rutina nueva cada vez (lo que descartaría
+// sustituciones de ejercicio ya hechas). Ver comentario en el schema.
+async function rutinaDiaDeHoy(userId, nombreDia, fechaLocal) {
+  const { rows } = await pool.query(
+    `SELECT id FROM rutinas_dia
+     WHERE user_id = $1 AND nombre_dia = $2 AND fecha_local = COALESCE($3, CURRENT_DATE)
+     ORDER BY generada_en DESC LIMIT 1`,
+    [userId, nombreDia, fechaLocal || null]
+  );
+  return rows[0]?.id || null;
 }
 
 async function agregarRutinaEjercicio(rutinaDiaId, re, client = pool) {
@@ -392,6 +413,7 @@ async function marcarTokenResetUsado(id) {
 
 module.exports = {
   pool,
+  migrar,
   EmailEnUsoError,
   transaccion,
   crearUsuario,
@@ -415,6 +437,7 @@ module.exports = {
   crearRutinaDia,
   agregarRutinaEjercicio,
   rutinaDiaDeUsuario,
+  rutinaDiaDeHoy,
   ejerciciosDeRutinaDia,
   crearRegistroSesion,
   rutinaEjercicioPorId,

@@ -171,6 +171,22 @@ function send(res, status, body) {
   res.end(json);
 }
 
+// Día de la semana ISO (0=lunes...6=domingo) a partir de la fecha de
+// calendario LOCAL del dispositivo (query "fechaLocal", formato
+// YYYY-MM-DD), no del reloj del servidor. El servidor corre en UTC en
+// Render; sin esto, de noche (hora local del usuario) el servidor ya
+// piensa que es el día siguiente y siempre sugiere el día equivocado.
+// Construimos la fecha a mediodía UTC (no medianoche) para que redondeos
+// de zona horaria nunca la empujen al día anterior o siguiente.
+function diaSemanaDesdeFechaLocal(fechaLocal) {
+  if (fechaLocal && /^\d{4}-\d{2}-\d{2}$/.test(fechaLocal)) {
+    const [y, m, d] = fechaLocal.split("-").map(Number);
+    const fecha = new Date(Date.UTC(y, m - 1, d, 12));
+    return (fecha.getUTCDay() + 6) % 7;
+  }
+  return (new Date().getDay() + 6) % 7;
+}
+
 async function requireAuth(req) {
   const auth = req.headers["authorization"] || "";
   const token = auth.replace(/^Bearer\s+/i, "");
@@ -453,13 +469,32 @@ async function handleRequest(req, res) {
 
   // ---------------- RUTINAS ----------------
   if (req.method === "GET" && url.pathname === "/v1/routines/today") {
+    const nombreDia = url.searchParams.get("dia") || "Empuje";
+    const fechaLocal = url.searchParams.get("fechaLocal") || null;
+
+    // Idempotente por día: si ya generamos la rutina de hoy antes, la
+    // reusamos tal cual (con cualquier sustitución de ejercicio ya hecha)
+    // en vez de generar una nueva y descartar esos cambios — ver comentario
+    // en sweetswank-schema.sql sobre rutinas_dia.
+    const rutinaDiaExistenteId = await db.rutinaDiaDeHoy(user.id, nombreDia, fechaLocal);
+    if (rutinaDiaExistenteId) {
+      const filas = await db.ejerciciosDeRutinaDia(rutinaDiaExistenteId);
+      const ejerciciosGuardados = filas.map((re) => ({
+        rutinaEjercicioId: re.rutinaEjercicioId,
+        exercise: engine.conNombreLocalizado(EXERCISE_DB.find((e) => e.id === re.ejercicioId), user.idioma),
+        series: re.series, repeticiones: re.repeticiones, porcentaje1RM: re.porcentaje1RM,
+        cargaKg: re.cargaKg, nota: re.nota, advertenciaLesion: re.advertenciaLesion,
+      }));
+      const supersetsSugeridos = engine.sugerirSupersets(ejerciciosGuardados, user.idioma);
+      return send(res, 200, { rutinaDiaId: rutinaDiaExistenteId, nombreDia, ejercicios: ejerciciosGuardados, supersetsSugeridos });
+    }
+
     const perfilMotor = await perfilParaMotor(user.id);
     if (!perfilMotor) return send(res, 404, { error: "sin_perfil", mensaje: "Completa tu perfil primero" });
-    const nombreDia = url.searchParams.get("dia") || "Empuje";
     const prescritos = engine.generarDia(nombreDia, EXERCISE_DB, perfilMotor, user.idioma);
 
     const { rutinaDiaId, ejerciciosGuardados } = await db.transaccion(async (client) => {
-      const rutinaDiaId = await db.crearRutinaDia(user.id, nombreDia, client);
+      const rutinaDiaId = await db.crearRutinaDia(user.id, nombreDia, fechaLocal, client);
       const ejerciciosGuardados = [];
       for (let i = 0; i < prescritos.length; i++) {
         const p = prescritos[i];
@@ -480,7 +515,7 @@ async function handleRequest(req, res) {
     if (!perfil) return send(res, 404, { error: "sin_perfil", mensaje: "Completa tu perfil primero" });
 
     const programa = engine.generarProgramaSemanal(perfil.diasPorSemana);
-    const diaSemanaHoy = (new Date().getDay() + 6) % 7; // JS: 0=domingo → ISO: 0=lunes
+    const diaSemanaHoy = diaSemanaDesdeFechaLocal(url.searchParams.get("fechaLocal"));
     const diaSugeridoHoy = programa.find((d) => d.diaSemana === diaSemanaHoy)?.tipo || null;
 
     const msPorDia = 24 * 60 * 60 * 1000;
@@ -649,6 +684,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 async function start() {
+  await db.migrar();
   EXERCISE_DB = await db.todosLosEjercicios();
   if (EXERCISE_DB.length === 0) {
     console.warn("AVISO: la tabla ejercicios está vacía — corre `node seed-exercises.js` primero.");
