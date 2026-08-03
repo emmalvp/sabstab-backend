@@ -88,6 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_1rm_user_lift_fecha ON registros_1rm(user_id, lev
 CREATE TABLE IF NOT EXISTS ejercicios (
   id                    TEXT PRIMARY KEY, -- ej. 'press_banca_plano'
   nombre                TEXT NOT NULL,
+  nombre_en             TEXT,
   patron                TEXT NOT NULL CHECK (patron IN (
                             'empuje_horizontal', 'empuje_vertical',
                             'traccion_horizontal', 'traccion_vertical',
@@ -97,8 +98,11 @@ CREATE TABLE IF NOT EXISTS ejercicios (
   angulo_grados         SMALLINT NOT NULL,
   equipo_necesario      TEXT[] NOT NULL,
   unilateral            BOOLEAN NOT NULL DEFAULT false,
+  agarre                TEXT CHECK (agarre IN ('prono', 'supino', 'neutro')), -- NULL = no aplica (ej. sentadillas)
   contraindicaciones    TEXT[] NOT NULL DEFAULT '{}' -- zonas de lesión, mismo enum que `lesiones.zona`
 );
+ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS nombre_en TEXT;
+ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS agarre TEXT CHECK (agarre IN ('prono', 'supino', 'neutro'));
 
 -- ---------------------------------------------------------------------
 -- 6. RUTINAS GENERADAS (snapshot de lo que el motor calculó ese día,

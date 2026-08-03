@@ -212,9 +212,9 @@ async function historial1RM(userId, levantamiento) {
 // ---------------------------------------------------------------------
 async function todosLosEjercicios() {
   const { rows } = await pool.query(
-    `SELECT id, nombre, patron, musculo_primario AS "musculoPrimario",
+    `SELECT id, nombre, nombre_en AS "nombreEn", patron, musculo_primario AS "musculoPrimario",
             musculos_secundarios AS "musculosSecundarios", angulo_grados AS "anguloGrados",
-            equipo_necesario AS "equipoNecesario", unilateral, contraindicaciones
+            equipo_necesario AS "equipoNecesario", unilateral, agarre, contraindicaciones
      FROM ejercicios ORDER BY id`
   );
   return rows;

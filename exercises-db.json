@@ -18,7 +18,8 @@
       "contraindicaciones": [
         "hombro",
         "codo"
-      ]
+      ],
+      "nombreEn": "Flat Barbell Bench Press"
     },
     {
       "id": "press_banca_inclinado_30_barra",
@@ -36,7 +37,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "30° Incline Barbell Bench Press"
     },
     {
       "id": "press_banca_inclinado_45_barra",
@@ -54,7 +56,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "45° Incline Barbell Bench Press"
     },
     {
       "id": "press_banca_declinado_barra",
@@ -72,7 +75,8 @@
       "contraindicaciones": [
         "hombro",
         "codo"
-      ]
+      ],
+      "nombreEn": "Decline Barbell Bench Press"
     },
     {
       "id": "press_mancuernas_plano",
@@ -90,7 +94,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Flat Dumbbell Bench Press"
     },
     {
       "id": "press_mancuernas_inclinado_30",
@@ -108,7 +113,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "30° Incline Dumbbell Press"
     },
     {
       "id": "press_maquina_pecho_convergente",
@@ -123,7 +129,8 @@
         "maquina"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Converging Chest Press Machine"
     },
     {
       "id": "press_smith_inclinado",
@@ -141,7 +148,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Incline Smith Machine Press"
     },
     {
       "id": "flexiones_estandar",
@@ -157,7 +165,8 @@
         "peso_corporal"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Standard Push-Up"
     },
     {
       "id": "flexiones_lastre",
@@ -176,7 +185,8 @@
       "contraindicaciones": [
         "hombro",
         "codo"
-      ]
+      ],
+      "nombreEn": "Weighted Push-Up"
     },
     {
       "id": "fondos_paralelas_inclinado",
@@ -194,7 +204,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Parallel Bar Dips (torso leaned forward)"
     },
     {
       "id": "aperturas_mancuerna_plano",
@@ -211,7 +222,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Flat Dumbbell Fly"
     },
     {
       "id": "aperturas_polea_baja_alta",
@@ -228,7 +240,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Low-to-High Cable Fly"
     },
     {
       "id": "cruce_poleas_altas",
@@ -245,7 +258,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "High Cable Crossover"
     },
     {
       "id": "press_banda_plano",
@@ -260,7 +274,8 @@
         "banda"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Flat Resistance Band Press"
     },
     {
       "id": "press_militar_barra_de_pie",
@@ -279,7 +294,8 @@
       "contraindicaciones": [
         "hombro",
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Standing Barbell Overhead Press"
     },
     {
       "id": "press_militar_barra_sentado",
@@ -296,7 +312,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Seated Barbell Overhead Press"
     },
     {
       "id": "press_mancuernas_sentado",
@@ -313,7 +330,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Seated Dumbbell Shoulder Press"
     },
     {
       "id": "press_arnold",
@@ -330,7 +348,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Arnold Press"
     },
     {
       "id": "press_landmine_unilateral",
@@ -346,7 +365,8 @@
         "barra"
       ],
       "unilateral": true,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Single-Arm Landmine Press"
     },
     {
       "id": "press_maquina_hombro",
@@ -361,7 +381,8 @@
         "maquina"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Shoulder Press Machine"
     },
     {
       "id": "push_press",
@@ -380,7 +401,8 @@
       "contraindicaciones": [
         "hombro",
         "rodilla"
-      ]
+      ],
+      "nombreEn": "Push Press"
     },
     {
       "id": "flexion_pike",
@@ -397,7 +419,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Pike Push-Up"
     },
     {
       "id": "fondos_paralelas_vertical",
@@ -415,7 +438,8 @@
       "contraindicaciones": [
         "hombro",
         "codo"
-      ]
+      ],
+      "nombreEn": "Parallel Bar Dips (torso upright)"
     },
     {
       "id": "elevacion_frontal_mancuerna",
@@ -430,7 +454,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Dumbbell Front Raise"
     },
     {
       "id": "remo_barra_pendlay",
@@ -447,7 +472,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Pendlay Row"
     },
     {
       "id": "remo_barra_yates",
@@ -464,7 +490,9 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Yates Row (supinated grip)",
+      "agarre": "supino"
     },
     {
       "id": "remo_mancuerna_unilateral",
@@ -479,7 +507,8 @@
         "mancuerna"
       ],
       "unilateral": true,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Single-Arm Dumbbell Row"
     },
     {
       "id": "remo_polea_sentado_agarre_ancho",
@@ -496,7 +525,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Seated Cable Row, Wide Grip"
     },
     {
       "id": "remo_polea_sentado_agarre_estrecho",
@@ -513,7 +543,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Seated Cable Row, Close Grip"
     },
     {
       "id": "remo_maquina_convergente",
@@ -528,7 +559,8 @@
         "maquina"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Converging Row Machine"
     },
     {
       "id": "remo_en_t",
@@ -545,7 +577,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "T-Bar Row"
     },
     {
       "id": "remo_invertido_peso_corporal",
@@ -561,7 +594,8 @@
         "peso_corporal"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Inverted Row"
     },
     {
       "id": "face_pull_polea",
@@ -578,7 +612,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Cable Face Pull"
     },
     {
       "id": "remo_banda",
@@ -593,7 +628,8 @@
         "banda"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Resistance Band Row"
     },
     {
       "id": "dominadas_pronas",
@@ -611,7 +647,9 @@
       "contraindicaciones": [
         "hombro",
         "codo"
-      ]
+      ],
+      "nombreEn": "Pull-Up (wide pronated grip)",
+      "agarre": "prono"
     },
     {
       "id": "dominadas_supinas",
@@ -629,7 +667,9 @@
       "contraindicaciones": [
         "hombro",
         "codo"
-      ]
+      ],
+      "nombreEn": "Chin-Up (supinated grip)",
+      "agarre": "supino"
     },
     {
       "id": "dominadas_agarre_neutro",
@@ -647,7 +687,9 @@
       "contraindicaciones": [
         "hombro",
         "codo"
-      ]
+      ],
+      "nombreEn": "Neutral-Grip Pull-Up",
+      "agarre": "neutro"
     },
     {
       "id": "jalon_polea_ancho",
@@ -664,7 +706,9 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Lat Pulldown, Wide Grip",
+      "agarre": "prono"
     },
     {
       "id": "jalon_polea_supino",
@@ -681,7 +725,9 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Lat Pulldown, Supinated Grip",
+      "agarre": "supino"
     },
     {
       "id": "jalon_maquina",
@@ -696,7 +742,8 @@
         "maquina"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Lat Pulldown Machine"
     },
     {
       "id": "jalon_unilateral_polea",
@@ -713,7 +760,8 @@
       "unilateral": true,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Single-Arm Cable Pulldown"
     },
     {
       "id": "pull_over_polea_alta",
@@ -728,7 +776,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "High Cable Pullover"
     },
     {
       "id": "sentadilla_trasera_barra",
@@ -747,7 +796,8 @@
       "contraindicaciones": [
         "rodilla",
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Back Squat"
     },
     {
       "id": "sentadilla_frontal_barra",
@@ -766,7 +816,8 @@
       "contraindicaciones": [
         "rodilla",
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Front Squat"
     },
     {
       "id": "sentadilla_goblet",
@@ -784,7 +835,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "rodilla"
-      ]
+      ],
+      "nombreEn": "Goblet Squat"
     },
     {
       "id": "sentadilla_bulgara",
@@ -801,7 +853,8 @@
       "unilateral": true,
       "contraindicaciones": [
         "rodilla"
-      ]
+      ],
+      "nombreEn": "Bulgarian Split Squat"
     },
     {
       "id": "zancadas_caminando",
@@ -819,7 +872,8 @@
       "unilateral": true,
       "contraindicaciones": [
         "rodilla"
-      ]
+      ],
+      "nombreEn": "Walking Lunge"
     },
     {
       "id": "prensa_piernas_45",
@@ -836,7 +890,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "rodilla"
-      ]
+      ],
+      "nombreEn": "45° Leg Press"
     },
     {
       "id": "sentadilla_hack_maquina",
@@ -853,7 +908,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "rodilla"
-      ]
+      ],
+      "nombreEn": "Hack Squat Machine"
     },
     {
       "id": "step_up_banco",
@@ -870,7 +926,8 @@
       "unilateral": true,
       "contraindicaciones": [
         "rodilla"
-      ]
+      ],
+      "nombreEn": "Dumbbell Step-Up"
     },
     {
       "id": "extension_cuadriceps_maquina",
@@ -885,7 +942,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "rodilla"
-      ]
+      ],
+      "nombreEn": "Leg Extension Machine"
     },
     {
       "id": "sentadilla_peso_corporal",
@@ -900,7 +958,8 @@
         "peso_corporal"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Bodyweight Squat"
     },
     {
       "id": "sentadilla_sissy",
@@ -915,7 +974,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "rodilla"
-      ]
+      ],
+      "nombreEn": "Sissy Squat"
     },
     {
       "id": "peso_muerto_convencional",
@@ -933,7 +993,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Conventional Deadlift"
     },
     {
       "id": "peso_muerto_sumo",
@@ -952,7 +1013,8 @@
       "contraindicaciones": [
         "rodilla",
         "cadera"
-      ]
+      ],
+      "nombreEn": "Sumo Deadlift"
     },
     {
       "id": "peso_muerto_rumano_barra",
@@ -970,7 +1032,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Romanian Deadlift (Barbell)"
     },
     {
       "id": "peso_muerto_rumano_mancuernas",
@@ -987,7 +1050,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Romanian Deadlift (Dumbbells)"
     },
     {
       "id": "peso_muerto_unilateral",
@@ -1005,7 +1069,8 @@
       "unilateral": true,
       "contraindicaciones": [
         "rodilla"
-      ]
+      ],
+      "nombreEn": "Single-Leg Deadlift"
     },
     {
       "id": "hip_thrust_barra",
@@ -1022,7 +1087,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "cadera"
-      ]
+      ],
+      "nombreEn": "Barbell Hip Thrust"
     },
     {
       "id": "hip_thrust_maquina",
@@ -1039,7 +1105,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "cadera"
-      ]
+      ],
+      "nombreEn": "Hip Thrust Machine"
     },
     {
       "id": "buenos_dias_barra",
@@ -1057,7 +1124,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Barbell Good Mornings"
     },
     {
       "id": "curl_femoral_tumbado",
@@ -1072,7 +1140,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "rodilla"
-      ]
+      ],
+      "nombreEn": "Lying Leg Curl Machine"
     },
     {
       "id": "puente_gluteo_peso_corporal",
@@ -1087,7 +1156,8 @@
         "peso_corporal"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Glute Bridge"
     },
     {
       "id": "kettlebell_swing",
@@ -1105,7 +1175,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Kettlebell Swing"
     },
     {
       "id": "plancha_abdominal",
@@ -1118,7 +1189,8 @@
         "peso_corporal"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Plank"
     },
     {
       "id": "plancha_lateral",
@@ -1131,7 +1203,8 @@
         "peso_corporal"
       ],
       "unilateral": true,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Side Plank"
     },
     {
       "id": "rueda_abdominal",
@@ -1149,7 +1222,8 @@
       "contraindicaciones": [
         "hombro",
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Ab Wheel Rollout"
     },
     {
       "id": "pallof_press",
@@ -1164,7 +1238,8 @@
         "polea"
       ],
       "unilateral": true,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Pallof Press"
     },
     {
       "id": "elevacion_piernas_colgado",
@@ -1181,7 +1256,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "hombro"
-      ]
+      ],
+      "nombreEn": "Hanging Leg Raise"
     },
     {
       "id": "crunch_polea_alta",
@@ -1196,7 +1272,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "High Cable Crunch"
     },
     {
       "id": "dead_bug",
@@ -1209,7 +1286,8 @@
         "peso_corporal"
       ],
       "unilateral": false,
-      "contraindicaciones": []
+      "contraindicaciones": [],
+      "nombreEn": "Dead Bug"
     },
     {
       "id": "giro_ruso_disco",
@@ -1224,7 +1302,8 @@
       "unilateral": false,
       "contraindicaciones": [
         "espalda_baja"
-      ]
+      ],
+      "nombreEn": "Russian Twist (Weight Plate)"
     }
   ]
 }

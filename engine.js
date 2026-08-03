@@ -50,28 +50,53 @@ function esSoloPesoCorporal(ejercicio) {
   return ejercicio.equipoNecesario.length === 1 && ejercicio.equipoNecesario[0] === "peso_corporal";
 }
 
-function generarNotasBiomecanicas(ejercicio, profile) {
+// zona (enum de lesiones.zona) → texto legible, en los dos idiomas que
+// soporta la app. El motor genera las notas en el idioma del usuario
+// (users.idioma) para no depender de que el cliente re-traduzca texto libre.
+const ZONA_LABEL = {
+  hombro: { es: "hombro", en: "shoulder" },
+  rodilla: { es: "rodilla", en: "knee" },
+  espalda_baja: { es: "espalda baja", en: "lower back" },
+  codo: { es: "codo", en: "elbow" },
+  cadera: { es: "cadera", en: "hip" },
+};
+
+function generarNotasBiomecanicas(ejercicio, profile, idioma = "es") {
+  const en = idioma === "en";
   const { antropometria, lesiones, edad, pesoCorporalKg } = profile;
   if (ejercicio.patron === "sentadilla" && antropometria.femurCm && antropometria.torsoCm) {
     const ratio = antropometria.femurCm / antropometria.torsoCm;
-    if (ratio > 1.05) return "Vas a inclinar más el torso al bajar — es normal con tu proporción de piernas.";
+    if (ratio > 1.05) {
+      return en
+        ? "You'll lean your torso forward more on the way down — normal for your leg proportions."
+        : "Vas a inclinar más el torso al bajar — es normal con tu proporción de piernas.";
+    }
   }
   const lesionRelevante = (lesiones || []).find(
     (l) => l.estado === "resuelta_con_precaucion" && ejercicio.contraindicaciones.includes(l.zona)
   );
-  if (lesionRelevante) return `Movimiento controlado: cuida el rango final por tu historial en ${lesionRelevante.zona}.`;
+  if (lesionRelevante) {
+    const zona = ZONA_LABEL[lesionRelevante.zona]?.[en ? "en" : "es"] || lesionRelevante.zona;
+    return en
+      ? `Controlled movement: watch the end range because of your ${zona} history.`
+      : `Movimiento controlado: cuida el rango final por tu historial en ${zona}.`;
+  }
   // Sin 1RM de referencia (ver oneRMRelevante) la progresión es por reps, no
   // por kg — así que la carga externa se sugiere como un salto ligado a tu
   // propio peso corporal, en vez de un número arbitrario.
   if (esSoloPesoCorporal(ejercicio) && pesoCorporalKg) {
     const saltoKg = Math.round(pesoCorporalKg * 0.075 * 10) / 10;
-    return `Ejercicio con tu propio peso: cuando superes el techo del rango de reps a RPE ≤8, en vez de sumar más reps agrega ~${saltoKg}kg externos (chaleco o cinturón lastrado) y vuelve al piso del rango.`;
+    return en
+      ? `Bodyweight exercise: once you exceed the top of your rep range at RPE ≤8, instead of adding more reps add ~${saltoKg}kg external (weighted vest or belt) and go back to the bottom of the range.`
+      : `Ejercicio con tu propio peso: cuando superes el techo del rango de reps a RPE ≤8, en vez de sumar más reps agrega ~${saltoKg}kg externos (chaleco o cinturón lastrado) y vuelve al piso del rango.`;
   }
   // Fragala et al. 2019 (NSCA position stand, entrenamiento de fuerza en
   // adultos mayores): el riesgo tendinoso/articular baja con más
   // calentamiento específico, sin necesidad de tocar la prescripción numérica.
   if (edad && edad >= 50) {
-    return "A tu edad, una serie extra de calentamiento específico (misma técnica, peso ligero) antes de la serie de trabajo reduce el riesgo de molestias sin cambiar tu prescripción.";
+    return en
+      ? "At your age, one extra light warm-up set (same technique, lighter weight) before the working set lowers injury risk without changing your prescription."
+      : "A tu edad, una serie extra de calentamiento específico (misma técnica, peso ligero) antes de la serie de trabajo reduce el riesgo de molestias sin cambiar tu prescripción.";
   }
   return "";
 }
@@ -142,22 +167,35 @@ function prescribirCarga(oneRMBase, objetivo) {
   };
 }
 
-function generarDia(nombreDia, exerciseDB, profile) {
+// Copia superficial con el nombre en el idioma del usuario — nunca se muta
+// el objeto original de EXERCISE_DB (compartido entre requests).
+function conNombreLocalizado(ejercicio, idioma) {
+  if (idioma !== "en" || !ejercicio.nombreEn) return ejercicio;
+  return { ...ejercicio, nombre: ejercicio.nombreEn };
+}
+
+function generarDia(nombreDia, exerciseDB, profile, idioma = "es") {
   const ejercicios = seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile);
+  const en = idioma === "en";
   return ejercicios.map((ej) => {
     const rm = oneRMRelevante(ej, profile.oneRM);
     const carga = prescribirCarga(rm, profile.objetivo);
     const lesionActiva = (profile.lesiones || []).find(
       (l) => (l.estado === "activa" || l.estado === "en_rehabilitacion") && ej.contraindicaciones.includes(l.zona)
     );
+    const zonaActiva = lesionActiva && (ZONA_LABEL[lesionActiva.zona]?.[en ? "en" : "es"] || lesionActiva.zona);
     return {
-      exercise: ej,
+      exercise: conNombreLocalizado(ej, idioma),
       series: carga.series,
       repeticiones: carga.repeticiones,
       porcentaje1RM: carga.porcentaje1RM,
       cargaKg: carga.cargaKg,
-      nota: generarNotasBiomecanicas(ej, profile),
-      advertenciaLesion: lesionActiva ? `Ajustado por tu historial en ${lesionActiva.zona}` : null,
+      nota: generarNotasBiomecanicas(ej, profile, idioma),
+      advertenciaLesion: lesionActiva
+        ? en
+          ? `Adjusted for your ${zonaActiva} history`
+          : `Ajustado por tu historial en ${zonaActiva}`
+        : null,
     };
   });
 }
@@ -171,7 +209,7 @@ function distanciaBiomecanica(a, b) {
   return d;
 }
 
-function buscarAlternativas(ejercicioOcupado, exerciseDB, profile, topN = 3) {
+function buscarAlternativas(ejercicioOcupado, exerciseDB, profile, topN = 3, idioma = "es") {
   const candidatos = filtrarPorEquipo(filtrarPorLesiones(exerciseDB, profile.lesiones), profile.equipoDisponible).filter(
     (ej) => ej.id !== ejercicioOcupado.id
   );
@@ -179,7 +217,7 @@ function buscarAlternativas(ejercicioOcupado, exerciseDB, profile, topN = 3) {
     .map((ej) => ({ ej, score: distanciaBiomecanica(ejercicioOcupado, ej) }))
     .sort((a, b) => a.score - b.score)
     .slice(0, topN)
-    .map((r) => r.ej);
+    .map((r) => conNombreLocalizado(r.ej, idioma));
 }
 
 function ajustarProximaCarga(cargaActual, repsObjetivoMax, registro, incrementoKg = 2.5) {
@@ -212,7 +250,8 @@ function sonCompatiblesParaSuperset(prescritoA, prescritoB) {
   return true;
 }
 
-function sugerirSupersets(prescritos) {
+function sugerirSupersets(prescritos, idioma = "es") {
+  const en = idioma === "en";
   const usados = new Set();
   const pares = [];
   for (let i = 0; i < prescritos.length; i++) {
@@ -225,7 +264,9 @@ function sugerirSupersets(prescritos) {
           rutinaEjercicioIdB: prescritos[j].rutinaEjercicioId,
           ejercicioIdA: prescritos[i].exercise.id,
           ejercicioIdB: prescritos[j].exercise.id,
-          motivo: "Músculos independientes: alterna series entre ambos con descanso mínimo para acortar la sesión sin perder rendimiento.",
+          motivo: en
+            ? "Independent muscles: alternate sets between the two with minimal rest to shorten the session without losing performance."
+            : "Músculos independientes: alterna series entre ambos con descanso mínimo para acortar la sesión sin perder rendimiento.",
         });
         usados.add(i);
         usados.add(j);
@@ -293,5 +334,6 @@ module.exports = {
   sugerirSupersets,
   generarProgramaSemanal,
   detectarEstancamiento,
+  conNombreLocalizado,
   SinEjerciciosDisponiblesError,
 };

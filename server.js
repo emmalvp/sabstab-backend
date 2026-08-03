@@ -456,7 +456,7 @@ async function handleRequest(req, res) {
     const perfilMotor = await perfilParaMotor(user.id);
     if (!perfilMotor) return send(res, 404, { error: "sin_perfil", mensaje: "Completa tu perfil primero" });
     const nombreDia = url.searchParams.get("dia") || "Empuje";
-    const prescritos = engine.generarDia(nombreDia, EXERCISE_DB, perfilMotor);
+    const prescritos = engine.generarDia(nombreDia, EXERCISE_DB, perfilMotor, user.idioma);
 
     const { rutinaDiaId, ejerciciosGuardados } = await db.transaccion(async (client) => {
       const rutinaDiaId = await db.crearRutinaDia(user.id, nombreDia, client);
@@ -471,7 +471,7 @@ async function handleRequest(req, res) {
       }
       return { rutinaDiaId, ejerciciosGuardados };
     });
-    const supersetsSugeridos = engine.sugerirSupersets(ejerciciosGuardados);
+    const supersetsSugeridos = engine.sugerirSupersets(ejerciciosGuardados, user.idioma);
     return send(res, 200, { rutinaDiaId, nombreDia, ejercicios: ejerciciosGuardados, supersetsSugeridos });
   }
 
@@ -517,7 +517,7 @@ async function handleRequest(req, res) {
     const filas = await db.ejerciciosDeRutinaDia(rutinaDiaId);
     const ejercicios = filas.map((re) => ({
       rutinaEjercicioId: re.rutinaEjercicioId,
-      exercise: EXERCISE_DB.find((e) => e.id === re.ejercicioId),
+      exercise: engine.conNombreLocalizado(EXERCISE_DB.find((e) => e.id === re.ejercicioId), user.idioma),
       series: re.series, repeticiones: re.repeticiones, porcentaje1RM: re.porcentaje1RM,
       cargaKg: re.cargaKg, nota: re.nota, advertenciaLesion: re.advertenciaLesion,
     }));
@@ -542,13 +542,15 @@ async function handleRequest(req, res) {
     const ejercicioId = url.searchParams.get("ejercicioId");
     const ocupado = EXERCISE_DB.find((e) => e.id === ejercicioId);
     if (!ocupado) return send(res, 404, { error: "ejercicio_no_encontrado" });
-    const alternativas = engine.buscarAlternativas(ocupado, EXERCISE_DB, perfilMotor, Number(url.searchParams.get("topN")) || 3);
-    return send(res, 200, { ocupado, alternativas });
+    const alternativas = engine.buscarAlternativas(ocupado, EXERCISE_DB, perfilMotor, Number(url.searchParams.get("topN")) || 3, user.idioma);
+    return send(res, 200, { ocupado: engine.conNombreLocalizado(ocupado, user.idioma), alternativas });
   }
 
   if (req.method === "GET" && url.pathname === "/v1/exercises") {
     const q = (url.searchParams.get("q") || "").toLowerCase();
-    const resultados = EXERCISE_DB.filter((e) => e.nombre.toLowerCase().includes(q));
+    const resultados = EXERCISE_DB.filter(
+      (e) => e.nombre.toLowerCase().includes(q) || e.nombreEn?.toLowerCase().includes(q)
+    ).map((e) => engine.conNombreLocalizado(e, user.idioma));
     return send(res, 200, { resultados });
   }
 
