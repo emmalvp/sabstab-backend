@@ -10,10 +10,34 @@ const EXERCISE_DB = JSON.parse(
   fs.readFileSync(path.join(__dirname, "exercises-db.json"), "utf8")
 ).ejercicios;
 
+// requeridos: si no hay ningún ejercicio disponible (equipo/lesiones) para
+// ese patrón, generarDia falla con SinEjerciciosDisponiblesError — solo
+// llevan patrones con al menos una variante de solo peso corporal en la
+// base de datos. opcionales: se agregan si hay equipo disponible para
+// ellos y si no, se omiten en silencio (nunca rompen la generación).
+//
+// El día compuesto solo (empuje_horizontal + empuje_vertical, o
+// traccion_horizontal + traccion_vertical) deja fuera músculos que sí
+// participan activamente en ese patrón de movimiento — tríceps y deltoides
+// lateral en empuje, bíceps y deltoides posterior en tirón, pantorrillas en
+// piernas — que los compuestos estimulan poco comparado con su propio
+// rango de movimiento en aislamiento (Schoenfeld & Grgic 2020, revisión de
+// volumen por grupo muscular; Nippard/Helms, plantillas push/pull/legs
+// basadas en evidencia). Por eso cada día ahora también cubre esos
+// patrones accesorios, no solo el/los ejercicios compuestos principales.
 const PATRONES_POR_DIA = {
-  Empuje: ["empuje_horizontal", "empuje_vertical", "core"],
-  Tiron: ["traccion_horizontal", "traccion_vertical", "core"],
-  Piernas: ["sentadilla", "bisagra_cadera", "core"],
+  Empuje: {
+    requeridos: ["empuje_horizontal", "empuje_vertical", "extension_codo", "core"],
+    opcionales: ["abduccion_hombro"],
+  },
+  Tiron: {
+    requeridos: ["traccion_horizontal", "traccion_vertical", "core"],
+    opcionales: ["flexion_codo", "elevacion_posterior_hombro"],
+  },
+  Piernas: {
+    requeridos: ["sentadilla", "bisagra_cadera", "flexion_plantar", "core"],
+    opcionales: [],
+  },
 };
 
 const RANGOS_POR_OBJETIVO = {
@@ -128,14 +152,18 @@ function esMasCompuesto(a, b) {
 }
 
 function seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile) {
-  const patrones = PATRONES_POR_DIA[nombreDia];
-  if (!patrones) throw new Error(`Día desconocido: ${nombreDia}`);
+  const spec = PATRONES_POR_DIA[nombreDia];
+  if (!spec) throw new Error(`Día desconocido: ${nombreDia}`);
   const disponibles = filtrarPorEquipo(filtrarPorLesiones(exerciseDB, profile.lesiones), profile.equipoDisponible);
-  return patrones.map((patron) => {
-    const candidatos = disponibles.filter((ej) => ej.patron === patron).sort(esMasCompuesto);
-    if (candidatos.length === 0) throw new SinEjerciciosDisponiblesError(patron);
-    return candidatos[0];
+  const elegirUno = (patron) => disponibles.filter((ej) => ej.patron === patron).sort(esMasCompuesto)[0] || null;
+
+  const requeridos = spec.requeridos.map((patron) => {
+    const ej = elegirUno(patron);
+    if (!ej) throw new SinEjerciciosDisponiblesError(patron);
+    return ej;
   });
+  const opcionales = spec.opcionales.map(elegirUno).filter(Boolean);
+  return [...requeridos, ...opcionales];
 }
 
 function oneRMRelevante(ejercicio, oneRM) {

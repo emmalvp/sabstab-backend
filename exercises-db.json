@@ -600,7 +600,7 @@
     {
       "id": "face_pull_polea",
       "nombre": "Face pull en polea",
-      "patron": "traccion_horizontal",
+      "patron": "elevacion_posterior_hombro",
       "musculoPrimario": "hombro",
       "musculosSecundarios": [
         "espalda"
@@ -1304,6 +1304,279 @@
         "espalda_baja"
       ],
       "nombreEn": "Russian Twist (Weight Plate)"
+    },
+    {
+      "id": "extension_triceps_polea",
+      "nombre": "Extensión de tríceps en polea alta",
+      "patron": "extension_codo",
+      "musculoPrimario": "triceps",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "codo"
+      ],
+      "nombreEn": "Cable Triceps Pushdown"
+    },
+    {
+      "id": "extension_triceps_mancuerna",
+      "nombre": "Extensión de tríceps con mancuerna (patada de tríceps)",
+      "patron": "extension_codo",
+      "musculoPrimario": "triceps",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": true,
+      "contraindicaciones": [
+        "codo"
+      ],
+      "nombreEn": "Dumbbell Triceps Kickback"
+    },
+    {
+      "id": "extension_triceps_maquina",
+      "nombre": "Extensión de tríceps en máquina",
+      "patron": "extension_codo",
+      "musculoPrimario": "triceps",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "codo"
+      ],
+      "nombreEn": "Machine Triceps Extension"
+    },
+    {
+      "id": "fondos_banco_triceps",
+      "nombre": "Fondos en banco (tríceps)",
+      "patron": "extension_codo",
+      "musculoPrimario": "triceps",
+      "musculosSecundarios": [
+        "hombro"
+      ],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro",
+        "codo"
+      ],
+      "nombreEn": "Bench Dips"
+    },
+    {
+      "id": "extension_triceps_banda",
+      "nombre": "Extensión de tríceps con banda",
+      "patron": "extension_codo",
+      "musculoPrimario": "triceps",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "banda"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "codo"
+      ],
+      "nombreEn": "Band Triceps Pushdown"
+    },
+    {
+      "id": "elevacion_lateral_mancuerna",
+      "nombre": "Elevación lateral con mancuerna",
+      "patron": "abduccion_hombro",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ],
+      "nombreEn": "Dumbbell Lateral Raise"
+    },
+    {
+      "id": "elevacion_lateral_polea",
+      "nombre": "Elevación lateral en polea baja",
+      "patron": "abduccion_hombro",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "polea"
+      ],
+      "unilateral": true,
+      "contraindicaciones": [
+        "hombro"
+      ],
+      "nombreEn": "Cable Lateral Raise"
+    },
+    {
+      "id": "elevacion_lateral_banda",
+      "nombre": "Elevación lateral con banda",
+      "patron": "abduccion_hombro",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "banda"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ],
+      "nombreEn": "Band Lateral Raise"
+    },
+    {
+      "id": "curl_biceps_barra",
+      "nombre": "Curl de bíceps con barra",
+      "patron": "flexion_codo",
+      "musculoPrimario": "biceps",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "codo"
+      ],
+      "nombreEn": "Barbell Biceps Curl"
+    },
+    {
+      "id": "curl_biceps_mancuerna",
+      "nombre": "Curl de bíceps con mancuerna",
+      "patron": "flexion_codo",
+      "musculoPrimario": "biceps",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "codo"
+      ],
+      "nombreEn": "Dumbbell Biceps Curl"
+    },
+    {
+      "id": "curl_biceps_banda",
+      "nombre": "Curl de bíceps con banda",
+      "patron": "flexion_codo",
+      "musculoPrimario": "biceps",
+      "musculosSecundarios": [],
+      "anguloGrados": 90,
+      "equipoNecesario": [
+        "banda"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "codo"
+      ],
+      "nombreEn": "Band Biceps Curl"
+    },
+    {
+      "id": "vuelo_posterior_mancuerna",
+      "nombre": "Vuelo posterior con mancuerna",
+      "patron": "elevacion_posterior_hombro",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "espalda"
+      ],
+      "anguloGrados": 45,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ],
+      "nombreEn": "Dumbbell Rear Delt Fly"
+    },
+    {
+      "id": "vuelo_posterior_banda",
+      "nombre": "Vuelo posterior con banda",
+      "patron": "elevacion_posterior_hombro",
+      "musculoPrimario": "hombro",
+      "musculosSecundarios": [
+        "espalda"
+      ],
+      "anguloGrados": 45,
+      "equipoNecesario": [
+        "banda"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "hombro"
+      ],
+      "nombreEn": "Band Rear Delt Fly"
+    },
+    {
+      "id": "elevacion_talones_pie",
+      "nombre": "Elevación de talones de pie",
+      "patron": "flexion_plantar",
+      "musculoPrimario": "pantorrilla",
+      "musculosSecundarios": [],
+      "anguloGrados": 20,
+      "equipoNecesario": [
+        "peso_corporal"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [],
+      "nombreEn": "Standing Calf Raise"
+    },
+    {
+      "id": "elevacion_talones_mancuerna",
+      "nombre": "Elevación de talones con mancuernas",
+      "patron": "flexion_plantar",
+      "musculoPrimario": "pantorrilla",
+      "musculosSecundarios": [],
+      "anguloGrados": 20,
+      "equipoNecesario": [
+        "mancuerna"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [],
+      "nombreEn": "Dumbbell Calf Raise"
+    },
+    {
+      "id": "elevacion_talones_maquina",
+      "nombre": "Elevación de talones en máquina",
+      "patron": "flexion_plantar",
+      "musculoPrimario": "pantorrilla",
+      "musculosSecundarios": [],
+      "anguloGrados": 20,
+      "equipoNecesario": [
+        "maquina"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [],
+      "nombreEn": "Machine Calf Raise"
+    },
+    {
+      "id": "elevacion_talones_barra",
+      "nombre": "Elevación de talones con barra",
+      "patron": "flexion_plantar",
+      "musculoPrimario": "pantorrilla",
+      "musculosSecundarios": [],
+      "anguloGrados": 20,
+      "equipoNecesario": [
+        "barra"
+      ],
+      "unilateral": false,
+      "contraindicaciones": [
+        "espalda_baja"
+      ],
+      "nombreEn": "Barbell Calf Raise"
     }
   ]
 }

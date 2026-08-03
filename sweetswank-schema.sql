@@ -94,7 +94,9 @@ CREATE TABLE IF NOT EXISTS ejercicios (
   patron                TEXT NOT NULL CHECK (patron IN (
                             'empuje_horizontal', 'empuje_vertical',
                             'traccion_horizontal', 'traccion_vertical',
-                            'sentadilla', 'bisagra_cadera', 'core')),
+                            'sentadilla', 'bisagra_cadera', 'core',
+                            'extension_codo', 'abduccion_hombro', 'flexion_codo',
+                            'elevacion_posterior_hombro', 'flexion_plantar')),
   musculo_primario      TEXT NOT NULL,
   musculos_secundarios  TEXT[] NOT NULL DEFAULT '{}',
   angulo_grados         SMALLINT NOT NULL,
@@ -105,6 +107,18 @@ CREATE TABLE IF NOT EXISTS ejercicios (
 );
 ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS nombre_en TEXT;
 ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS agarre TEXT CHECK (agarre IN ('prono', 'supino', 'neutro'));
+-- Patrones de accesorio/aislamiento agregados para que cada día (empuje,
+-- tirón, piernas) cubra todos los músculos que participan en ese
+-- movimiento, no solo el ejercicio compuesto principal — ver comentario en
+-- engine.js sobre PATRONES_POR_DIA.
+ALTER TABLE ejercicios DROP CONSTRAINT IF EXISTS ejercicios_patron_check;
+ALTER TABLE ejercicios ADD CONSTRAINT ejercicios_patron_check CHECK (patron IN (
+  'empuje_horizontal', 'empuje_vertical',
+  'traccion_horizontal', 'traccion_vertical',
+  'sentadilla', 'bisagra_cadera', 'core',
+  'extension_codo', 'abduccion_hombro', 'flexion_codo',
+  'elevacion_posterior_hombro', 'flexion_plantar'
+));
 
 -- ---------------------------------------------------------------------
 -- 6. RUTINAS GENERADAS (snapshot de lo que el motor calculó ese día,

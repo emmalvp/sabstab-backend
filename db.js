@@ -6,6 +6,8 @@
  * README) — en producción, apunta a un Postgres real vía variable de
  * entorno.
  */
+const fs = require("fs");
+const path = require("path");
 const { Pool } = require("pg");
 
 const pool = new Pool({
@@ -19,6 +21,42 @@ async function migrar() {
   await pool.query(`ALTER TABLE rutinas_dia ADD COLUMN IF NOT EXISTS fecha_local DATE NOT NULL DEFAULT CURRENT_DATE`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_rutinas_dia_usuario_fecha ON rutinas_dia(user_id, nombre_dia, fecha_local)`);
   await pool.query(`ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS dias_descanso_preferidos SMALLINT[]`);
+  await pool.query(`ALTER TABLE ejercicios DROP CONSTRAINT IF EXISTS ejercicios_patron_check`);
+  await pool.query(`ALTER TABLE ejercicios ADD CONSTRAINT ejercicios_patron_check CHECK (patron IN (
+    'empuje_horizontal', 'empuje_vertical',
+    'traccion_horizontal', 'traccion_vertical',
+    'sentadilla', 'bisagra_cadera', 'core',
+    'extension_codo', 'abduccion_hombro', 'flexion_codo',
+    'elevacion_posterior_hombro', 'flexion_plantar'
+  ))`);
+  await sembrarEjercicios();
+}
+
+// Sincroniza la tabla `ejercicios` con exercises-db.json en cada arranque
+// (ON CONFLICT DO UPDATE, idempotente) — así agregar/editar ejercicios en
+// el JSON y hacer deploy es suficiente, sin correr `node seed-exercises.js`
+// a mano contra producción cada vez (antes era el único camino y era fácil
+// de olvidar, dejando el catálogo real desincronizado del JSON del repo).
+async function sembrarEjercicios() {
+  const { ejercicios } = JSON.parse(fs.readFileSync(path.join(__dirname, "exercises-db.json"), "utf8"));
+  for (const ej of ejercicios) {
+    await pool.query(
+      `INSERT INTO ejercicios (id, nombre, nombre_en, patron, musculo_primario, musculos_secundarios, angulo_grados, equipo_necesario, unilateral, agarre, contraindicaciones)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (id) DO UPDATE SET
+         nombre = EXCLUDED.nombre,
+         nombre_en = EXCLUDED.nombre_en,
+         patron = EXCLUDED.patron,
+         musculo_primario = EXCLUDED.musculo_primario,
+         musculos_secundarios = EXCLUDED.musculos_secundarios,
+         angulo_grados = EXCLUDED.angulo_grados,
+         equipo_necesario = EXCLUDED.equipo_necesario,
+         unilateral = EXCLUDED.unilateral,
+         agarre = EXCLUDED.agarre,
+         contraindicaciones = EXCLUDED.contraindicaciones`,
+      [ej.id, ej.nombre, ej.nombreEn || null, ej.patron, ej.musculoPrimario, ej.musculosSecundarios, ej.anguloGrados, ej.equipoNecesario, ej.unilateral, ej.agarre || null, ej.contraindicaciones]
+    );
+  }
 }
 
 class EmailEnUsoError extends Error {
@@ -439,6 +477,7 @@ async function marcarTokenResetUsado(id) {
 module.exports = {
   pool,
   migrar,
+  sembrarEjercicios,
   EmailEnUsoError,
   transaccion,
   crearUsuario,
