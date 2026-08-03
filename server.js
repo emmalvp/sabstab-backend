@@ -436,7 +436,7 @@ async function handleRequest(req, res) {
   if (req.method === "GET" && url.pathname === "/v1/profile") {
     const perfil = await perfilCompleto(user.id);
     if (!perfil) return send(res, 404, { error: "sin_perfil", mensaje: "Todavía no completaste el onboarding" });
-    return send(res, 200, { nombre: user.nombre, ...perfil });
+    return send(res, 200, { nombre: user.nombre, idioma: user.idioma, unidadPeso: user.unidadPeso, ...perfil });
   }
 
   if (req.method === "GET" && url.pathname === "/v1/profile/history") {
