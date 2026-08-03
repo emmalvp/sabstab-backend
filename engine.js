@@ -287,12 +287,19 @@ function sugerirSupersets(prescritos, idioma = "es") {
 // aritmética entera). Espaciar el entreno evita juntar sesiones seguidas del
 // mismo grupo muscular sin recuperación. diaSemana: 0=lunes … 6=domingo.
 const CICLO_SPLIT = ["Empuje", "Tiron", "Piernas"];
-function generarProgramaSemanal(diasPorSemana) {
+// diasDescansoPreferidos: array opcional de días ISO (0=lunes...6=domingo)
+// que el usuario eligió como descanso — si viene y calza con diasPorSemana
+// (validado en server.js), se respeta tal cual en vez del reparto parejo
+// automático. Los días de entrenamiento restantes se numeran en orden de
+// calendario para asignarles el split (empuje/tirón/piernas).
+function generarProgramaSemanal(diasPorSemana, diasDescansoPreferidos = null) {
   const n = Math.min(7, Math.max(1, diasPorSemana));
+  const descansoManual =
+    Array.isArray(diasDescansoPreferidos) && diasDescansoPreferidos.length === 7 - n ? new Set(diasDescansoPreferidos) : null;
   let entrenoIndex = 0;
   const programa = [];
   for (let d = 0; d < 7; d++) {
-    const esEntreno = Math.floor(((d + 1) * n) / 7) > Math.floor((d * n) / 7);
+    const esEntreno = descansoManual ? !descansoManual.has(d) : Math.floor(((d + 1) * n) / 7) > Math.floor((d * n) / 7);
     if (esEntreno) {
       programa.push({ diaSemana: d, tipo: CICLO_SPLIT[entrenoIndex % CICLO_SPLIT.length], descanso: false });
       entrenoIndex++;

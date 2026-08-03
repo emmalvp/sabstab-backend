@@ -18,6 +18,7 @@ const pool = new Pool({
 async function migrar() {
   await pool.query(`ALTER TABLE rutinas_dia ADD COLUMN IF NOT EXISTS fecha_local DATE NOT NULL DEFAULT CURRENT_DATE`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_rutinas_dia_usuario_fecha ON rutinas_dia(user_id, nombre_dia, fecha_local)`);
+  await pool.query(`ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS dias_descanso_preferidos SMALLINT[]`);
 }
 
 class EmailEnUsoError extends Error {
@@ -144,6 +145,7 @@ async function perfilVigente(userId) {
     `SELECT id, altura_cm AS "alturaCm", femur_cm AS "femurCm", torso_cm AS "torsoCm", brazo_cm AS "brazoCm",
             edad, peso_corporal_kg AS "pesoCorporalKg",
             objetivo, nivel, dias_por_semana AS "diasPorSemana", duracion_sesion_min AS "duracionSesionMin",
+            dias_descanso_preferidos AS "diasDescansoPreferidos",
             equipo_disponible AS "equipoDisponible", vigente_desde AS "vigenteDesde"
      FROM perfiles WHERE user_id = $1 AND vigente_hasta IS NULL`,
     [userId]
@@ -157,10 +159,13 @@ async function cerrarPerfilVigente(userId, client = pool) {
 
 async function crearPerfil(userId, p, client = pool) {
   const { rows } = await client.query(
-    `INSERT INTO perfiles (user_id, altura_cm, femur_cm, torso_cm, brazo_cm, edad, peso_corporal_kg, objetivo, nivel, dias_por_semana, duracion_sesion_min, equipo_disponible)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+    `INSERT INTO perfiles (user_id, altura_cm, femur_cm, torso_cm, brazo_cm, edad, peso_corporal_kg, objetivo, nivel, dias_por_semana, dias_descanso_preferidos, duracion_sesion_min, equipo_disponible)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
      RETURNING id, vigente_desde AS "vigenteDesde"`,
-    [userId, p.alturaCm, p.femurCm, p.torsoCm, p.brazoCm, p.edad, p.pesoCorporalKg, p.objetivo, p.nivel, p.diasPorSemana, p.duracionSesionMin, p.equipoDisponible]
+    [
+      userId, p.alturaCm, p.femurCm, p.torsoCm, p.brazoCm, p.edad, p.pesoCorporalKg, p.objetivo, p.nivel,
+      p.diasPorSemana, p.diasDescansoPreferidos || null, p.duracionSesionMin, p.equipoDisponible,
+    ]
   );
   return rows[0];
 }
@@ -259,6 +264,26 @@ async function agregarRutinaEjercicio(rutinaDiaId, re, client = pool) {
     [rutinaDiaId, re.ejercicioId, re.orden, re.series, re.repeticiones, re.porcentaje1RM, re.cargaKg, re.notaBiomecanica || null, re.advertenciaLesion || null]
   );
   return rows[0].id;
+}
+
+// Series ya registradas hoy para cada ejercicio de esta rutina del día —
+// permite al cliente saber qué ejercicios (y qué tan de completa) ya se
+// hicieron, para marcar el ejercicio/rutina como completado.
+async function registrosDeRutinaDia(rutinaDiaId) {
+  const { rows } = await pool.query(
+    `SELECT rs.rutina_ejercicio_id AS "rutinaEjercicioId", rs.carga_usada_kg AS "cargaUsadaKg",
+            rs.repeticiones_completadas AS "repeticionesCompletadas", rs.rpe, rs.completada_en AS "completadaEn"
+     FROM registros_sesion rs
+     JOIN rutina_ejercicios re ON re.id = rs.rutina_ejercicio_id
+     WHERE re.rutina_dia_id = $1
+     ORDER BY rs.completada_en ASC`,
+    [rutinaDiaId]
+  );
+  return rows.map((r) => ({
+    ...r,
+    cargaUsadaKg: r.cargaUsadaKg != null ? Number(r.cargaUsadaKg) : null,
+    rpe: r.rpe != null ? Number(r.rpe) : null,
+  }));
 }
 
 async function rutinaDiaDeUsuario(rutinaDiaId, userId) {
@@ -439,6 +464,7 @@ module.exports = {
   rutinaDiaDeUsuario,
   rutinaDiaDeHoy,
   ejerciciosDeRutinaDia,
+  registrosDeRutinaDia,
   crearRegistroSesion,
   rutinaEjercicioPorId,
   sustituirEjercicioDeRutina,

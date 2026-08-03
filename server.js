@@ -160,6 +160,7 @@ async function perfilCompleto(userId) {
   return {
     ...motor,
     duracionSesionMin: perfil.duracionSesionMin,
+    diasDescansoPreferidos: perfil.diasDescansoPreferidos || null,
     perfilId: perfil.id,
     vigenteDesde: perfil.vigenteDesde,
   };
@@ -178,6 +179,18 @@ function send(res, status, body) {
 // piensa que es el día siguiente y siempre sugiere el día equivocado.
 // Construimos la fecha a mediodía UTC (no medianoche) para que redondeos
 // de zona horaria nunca la empujen al día anterior o siguiente.
+// Agrupa registros_sesion (ya traídos con db.registrosDeRutinaDia) por
+// rutina_ejercicio_id, para poder anotar cada ejercicio de la rutina con
+// las series que ya se le registraron hoy.
+function agruparRegistrosPorEjercicio(registros) {
+  const porEjercicio = new Map();
+  for (const r of registros) {
+    if (!porEjercicio.has(r.rutinaEjercicioId)) porEjercicio.set(r.rutinaEjercicioId, []);
+    porEjercicio.get(r.rutinaEjercicioId).push({ cargaUsadaKg: r.cargaUsadaKg, repeticionesCompletadas: r.repeticionesCompletadas, rpe: r.rpe });
+  }
+  return porEjercicio;
+}
+
 function diaSemanaDesdeFechaLocal(fechaLocal) {
   if (fechaLocal && /^\d{4}-\d{2}-\d{2}$/.test(fechaLocal)) {
     const [y, m, d] = fechaLocal.split("-").map(Number);
@@ -221,6 +234,20 @@ function validarPerfilRequest(body) {
   if (!body.duracionSesionMin) faltantes.push("duracionSesionMin");
   if (!body.equipoDisponible) faltantes.push("equipoDisponible");
   return faltantes;
+}
+
+// diasDescansoPreferidos es opcional — si viene, tiene que ser exactamente
+// los días de descanso que le tocan a diasPorSemana (7 - diasPorSemana),
+// sin repetidos y dentro de 0-6 (lunes-domingo ISO). Si no calza, se ignora
+// la personalización y se cae al reparto parejo por defecto.
+function diasDescansoValidos(diasDescansoPreferidos, diasPorSemana) {
+  if (diasDescansoPreferidos == null) return true;
+  if (!Array.isArray(diasDescansoPreferidos)) return false;
+  const esperados = 7 - Math.min(7, Math.max(1, Number(diasPorSemana) || 0));
+  if (diasDescansoPreferidos.length !== esperados) return false;
+  const unicos = new Set(diasDescansoPreferidos);
+  if (unicos.size !== diasDescansoPreferidos.length) return false;
+  return diasDescansoPreferidos.every((d) => Number.isInteger(d) && d >= 0 && d <= 6);
 }
 
 // CORS abierto — es una API pensada para clientes nativos (iOS/Android),
@@ -421,6 +448,9 @@ async function handleRequest(req, res) {
     if (faltantes.length > 0) {
       return send(res, 400, { error: "datos_incompletos", mensaje: `Faltan campos: ${faltantes.join(", ")}` });
     }
+    if (!diasDescansoValidos(body.diasDescansoPreferidos, body.diasPorSemana)) {
+      return send(res, 400, { error: "datos_invalidos", mensaje: "diasDescansoPreferidos no coincide con diasPorSemana" });
+    }
 
     const perfil = await db.transaccion(async (client) => {
       await db.cerrarPerfilVigente(user.id, client);
@@ -434,6 +464,7 @@ async function handleRequest(req, res) {
         objetivo: body.objetivo,
         nivel: body.nivel,
         diasPorSemana: body.diasPorSemana,
+        diasDescansoPreferidos: body.diasDescansoPreferidos || null,
         duracionSesionMin: body.duracionSesionMin,
         equipoDisponible: body.equipoDisponible,
       }, client);
@@ -478,12 +509,17 @@ async function handleRequest(req, res) {
     // en sweetswank-schema.sql sobre rutinas_dia.
     const rutinaDiaExistenteId = await db.rutinaDiaDeHoy(user.id, nombreDia, fechaLocal);
     if (rutinaDiaExistenteId) {
-      const filas = await db.ejerciciosDeRutinaDia(rutinaDiaExistenteId);
+      const [filas, registros] = await Promise.all([
+        db.ejerciciosDeRutinaDia(rutinaDiaExistenteId),
+        db.registrosDeRutinaDia(rutinaDiaExistenteId),
+      ]);
+      const registrosPorEjercicio = agruparRegistrosPorEjercicio(registros);
       const ejerciciosGuardados = filas.map((re) => ({
         rutinaEjercicioId: re.rutinaEjercicioId,
         exercise: engine.conNombreLocalizado(EXERCISE_DB.find((e) => e.id === re.ejercicioId), user.idioma),
         series: re.series, repeticiones: re.repeticiones, porcentaje1RM: re.porcentaje1RM,
         cargaKg: re.cargaKg, nota: re.nota, advertenciaLesion: re.advertenciaLesion,
+        seriesRegistradas: registrosPorEjercicio.get(re.rutinaEjercicioId) || [],
       }));
       const supersetsSugeridos = engine.sugerirSupersets(ejerciciosGuardados, user.idioma);
       return send(res, 200, { rutinaDiaId: rutinaDiaExistenteId, nombreDia, ejercicios: ejerciciosGuardados, supersetsSugeridos });
@@ -502,7 +538,7 @@ async function handleRequest(req, res) {
           ejercicioId: p.exercise.id, orden: i, series: p.series, repeticiones: p.repeticiones,
           porcentaje1RM: p.porcentaje1RM, cargaKg: p.cargaKg, notaBiomecanica: p.nota, advertenciaLesion: p.advertenciaLesion,
         }, client);
-        ejerciciosGuardados.push({ rutinaEjercicioId, ...p });
+        ejerciciosGuardados.push({ rutinaEjercicioId, seriesRegistradas: [], ...p });
       }
       return { rutinaDiaId, ejerciciosGuardados };
     });
@@ -514,7 +550,7 @@ async function handleRequest(req, res) {
     const perfil = await db.perfilVigente(user.id);
     if (!perfil) return send(res, 404, { error: "sin_perfil", mensaje: "Completa tu perfil primero" });
 
-    const programa = engine.generarProgramaSemanal(perfil.diasPorSemana);
+    const programa = engine.generarProgramaSemanal(perfil.diasPorSemana, perfil.diasDescansoPreferidos);
     const diaSemanaHoy = diaSemanaDesdeFechaLocal(url.searchParams.get("fechaLocal"));
     const diaSugeridoHoy = programa.find((d) => d.diaSemana === diaSemanaHoy)?.tipo || null;
 
@@ -549,12 +585,14 @@ async function handleRequest(req, res) {
     const rutinaDiaId = url.pathname.split("/")[3];
     const rutinaDia = await db.rutinaDiaDeUsuario(rutinaDiaId, user.id);
     if (!rutinaDia) return send(res, 404, { error: "rutina_no_encontrada" });
-    const filas = await db.ejerciciosDeRutinaDia(rutinaDiaId);
+    const [filas, registros] = await Promise.all([db.ejerciciosDeRutinaDia(rutinaDiaId), db.registrosDeRutinaDia(rutinaDiaId)]);
+    const registrosPorEjercicio = agruparRegistrosPorEjercicio(registros);
     const ejercicios = filas.map((re) => ({
       rutinaEjercicioId: re.rutinaEjercicioId,
       exercise: engine.conNombreLocalizado(EXERCISE_DB.find((e) => e.id === re.ejercicioId), user.idioma),
       series: re.series, repeticiones: re.repeticiones, porcentaje1RM: re.porcentaje1RM,
       cargaKg: re.cargaKg, nota: re.nota, advertenciaLesion: re.advertenciaLesion,
+      seriesRegistradas: registrosPorEjercicio.get(re.rutinaEjercicioId) || [],
     }));
     return send(res, 200, { rutinaDiaId: rutinaDia.id, nombreDia: rutinaDia.nombreDia, ejercicios });
   }
