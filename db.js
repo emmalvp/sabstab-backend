@@ -343,6 +343,60 @@ async function desactivarDispositivo(id, userId) {
   return rows[0] || null;
 }
 
+async function dispositivosActivosDeUsuario(userId) {
+  const { rows } = await pool.query(
+    `SELECT id, tipo, conectado_en AS "conectadoEn" FROM dispositivos_conectados
+     WHERE user_id = $1 AND activo = true ORDER BY conectado_en DESC`,
+    [userId]
+  );
+  return rows;
+}
+
+// ---------------------------------------------------------------------
+// SESIONES DE WEARABLE (HealthKit / Health Connect)
+// ---------------------------------------------------------------------
+// Upsert por (user_id, fuente, external_id): re-sincronizar la misma
+// sesión (el reloj puede reportar el mismo entrenamiento más de una vez,
+// o llegar con datos actualizados) actualiza la fila en vez de duplicarla.
+async function upsertSesionesWearable(userId, fuente, sesiones) {
+  let sincronizadas = 0;
+  for (const s of sesiones) {
+    const duracionSeg = Math.round((new Date(s.finalizadaEn) - new Date(s.iniciadaEn)) / 1000);
+    const { rowCount } = await pool.query(
+      `INSERT INTO sesiones_wearable
+         (user_id, fuente, external_id, tipo_actividad, iniciada_en, finalizada_en, duracion_seg, calorias_activas, fc_promedio, fc_maxima, fc_minima)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (user_id, fuente, external_id) DO UPDATE SET
+         tipo_actividad = EXCLUDED.tipo_actividad,
+         iniciada_en = EXCLUDED.iniciada_en,
+         finalizada_en = EXCLUDED.finalizada_en,
+         duracion_seg = EXCLUDED.duracion_seg,
+         calorias_activas = EXCLUDED.calorias_activas,
+         fc_promedio = EXCLUDED.fc_promedio,
+         fc_maxima = EXCLUDED.fc_maxima,
+         fc_minima = EXCLUDED.fc_minima,
+         sincronizada_en = now()`,
+      [
+        userId, fuente, s.externalId, s.tipoActividad || null, s.iniciadaEn, s.finalizadaEn,
+        duracionSeg, s.caloriasActivas ?? null, s.fcPromedio ?? null, s.fcMaxima ?? null, s.fcMinima ?? null,
+      ]
+    );
+    sincronizadas += rowCount;
+  }
+  return sincronizadas;
+}
+
+async function sesionesWearableDeUsuario(userId, limite = 20) {
+  const { rows } = await pool.query(
+    `SELECT id, fuente, tipo_actividad AS "tipoActividad", iniciada_en AS "iniciadaEn", finalizada_en AS "finalizadaEn",
+            duracion_seg AS "duracionSeg", calorias_activas AS "caloriasActivas",
+            fc_promedio AS "fcPromedio", fc_maxima AS "fcMaxima", fc_minima AS "fcMinima"
+     FROM sesiones_wearable WHERE user_id = $1 ORDER BY iniciada_en DESC LIMIT $2`,
+    [userId, limite]
+  );
+  return rows.map((r) => ({ ...r, caloriasActivas: r.caloriasActivas != null ? Number(r.caloriasActivas) : null }));
+}
+
 // ---------------------------------------------------------------------
 // RECUPERACIÓN DE CONTRASEÑA
 // ---------------------------------------------------------------------
@@ -399,6 +453,9 @@ module.exports = {
   constancia28dias,
   crearDispositivo,
   desactivarDispositivo,
+  dispositivosActivosDeUsuario,
+  upsertSesionesWearable,
+  sesionesWearableDeUsuario,
   crearTokenReset,
   buscarTokenReset,
   marcarTokenResetUsado,
