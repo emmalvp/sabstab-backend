@@ -169,16 +169,60 @@ CREATE TABLE IF NOT EXISTS registros_sesion (
 );
 CREATE INDEX IF NOT EXISTS idx_registros_sesion_user_fecha ON registros_sesion(user_id, completada_en DESC);
 
+-- 'health_connect' se agregó junto con la integración real de wearables
+-- (Health Connect en Android) — el CHECK original no lo incluía. Se
+-- reconstruye el constraint con su nombre autogenerado por Postgres
+-- (<tabla>_<columna>_check) para que node migrate.js siga siendo idempotente.
+ALTER TABLE registros_sesion DROP CONSTRAINT IF EXISTS registros_sesion_fuente_check;
+ALTER TABLE registros_sesion ADD CONSTRAINT registros_sesion_fuente_check
+  CHECK (fuente IN ('manual', 'apple_watch', 'otro_wearable', 'health_connect'));
+
 -- ---------------------------------------------------------------------
--- 8. DISPOSITIVOS CONECTADOS (Apple Watch / otros wearables)
+-- 8. DISPOSITIVOS CONECTADOS (Apple Watch / Health Connect en Android / otros)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS dispositivos_conectados (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  tipo              TEXT NOT NULL CHECK (tipo IN ('apple_watch', 'garmin', 'whoop', 'otro')),
+  tipo              TEXT NOT NULL CHECK (tipo IN ('apple_watch', 'health_connect', 'garmin', 'whoop', 'otro')),
   conectado_en      TIMESTAMPTZ NOT NULL DEFAULT now(),
   activo            BOOLEAN NOT NULL DEFAULT true
 );
+
+-- 'health_connect' es la integración real de Android (HealthKit no existe
+-- ahí): agrupa cualquier reloj que escriba en el Health Connect del
+-- teléfono (Galaxy Watch/Samsung Health incluido), igual que 'apple_watch'
+-- agrupa lo que sea que escriba en HealthKit en iOS.
+ALTER TABLE dispositivos_conectados DROP CONSTRAINT IF EXISTS dispositivos_conectados_tipo_check;
+ALTER TABLE dispositivos_conectados ADD CONSTRAINT dispositivos_conectados_tipo_check
+  CHECK (tipo IN ('apple_watch', 'health_connect', 'garmin', 'whoop', 'otro'));
+
+-- ---------------------------------------------------------------------
+-- 8.1 SESIONES DE WEARABLE (resumen de entrenamientos sincronizados desde
+--     HealthKit/Health Connect — separado de registros_sesion porque el
+--     reloj reporta la sesión completa, no serie por serie: no hay
+--     rutina_ejercicio_id al que atarlo. Sirve para mostrarle al usuario
+--     su frecuencia cardíaca/calorías reales de la sesión; no alimenta
+--     ajustarProximaCarga() en engine.js — no hay una fórmula con
+--     evidencia sólida para traducir FC en carga, así que por ahora solo
+--     se muestra el dato, no se usa para prescribir.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS sesiones_wearable (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  fuente            TEXT NOT NULL CHECK (fuente IN ('apple_watch', 'health_connect')),
+  external_id       TEXT NOT NULL, -- id nativo del registro en HealthKit/Health Connect, evita duplicar al re-sincronizar
+  tipo_actividad    TEXT, -- ej. 'STRENGTH_TRAINING' — lo que reporte la plataforma, sin normalizar
+  iniciada_en       TIMESTAMPTZ NOT NULL,
+  finalizada_en     TIMESTAMPTZ NOT NULL,
+  duracion_seg      INTEGER,
+  calorias_activas  NUMERIC(7,1),
+  fc_promedio       SMALLINT,
+  fc_maxima         SMALLINT,
+  fc_minima         SMALLINT,
+  sincronizada_en   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, fuente, external_id)
+);
+CREATE INDEX IF NOT EXISTS idx_sesiones_wearable_user_fecha ON sesiones_wearable(user_id, iniciada_en DESC);
 
 -- ---------------------------------------------------------------------
 -- 9. TOKENS DE RECUPERACIÓN DE CONTRASEÑA

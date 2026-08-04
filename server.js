@@ -690,6 +690,11 @@ async function handleRequest(req, res) {
     return send(res, 200, { ok: true });
   }
 
+  if (req.method === "GET" && url.pathname === "/v1/devices") {
+    const dispositivos = await db.dispositivosActivosDeUsuario(user.id);
+    return send(res, 200, { dispositivos });
+  }
+
   if (req.method === "POST" && url.pathname === "/v1/devices/connect") {
     const dispositivoId = await db.crearDispositivo(user.id, body.tipo);
     return send(res, 201, { dispositivoId });
@@ -700,6 +705,33 @@ async function handleRequest(req, res) {
     const dispositivo = await db.desactivarDispositivo(dispositivoId, user.id);
     if (!dispositivo) return send(res, 404, { error: "dispositivo_no_encontrado" });
     return send(res, 200, { ok: true });
+  }
+
+  // ---------------- WEARABLES (HealthKit / Health Connect) ----------------
+  // El cliente lee HealthKit/Health Connect localmente y manda acá el
+  // resumen ya calculado (fc promedio/máxima/mínima, calorías, duración) —
+  // el servidor nunca habla con HealthKit/Health Connect directamente, eso
+  // solo existe en el dispositivo. Ver mobile/src/wearables/.
+  if (req.method === "POST" && url.pathname === "/v1/wearable/sync") {
+    if (!["apple_watch", "health_connect"].includes(body.fuente)) {
+      return send(res, 400, { error: "datos_incompletos", mensaje: "fuente debe ser apple_watch o health_connect" });
+    }
+    if (!Array.isArray(body.sesiones) || body.sesiones.length === 0) {
+      return send(res, 400, { error: "datos_incompletos", mensaje: "Falta sesiones (array no vacío)" });
+    }
+    for (const s of body.sesiones) {
+      if (!s.externalId || !s.iniciadaEn || !s.finalizadaEn) {
+        return send(res, 400, { error: "datos_incompletos", mensaje: "Cada sesión necesita externalId, iniciadaEn y finalizadaEn" });
+      }
+    }
+    const sincronizadas = await db.upsertSesionesWearable(user.id, body.fuente, body.sesiones);
+    return send(res, 200, { sincronizadas });
+  }
+
+  if (req.method === "GET" && url.pathname === "/v1/wearable/sessions") {
+    const limite = Math.min(Number(url.searchParams.get("limit")) || 20, 100);
+    const sesiones = await db.sesionesWearableDeUsuario(user.id, limite);
+    return send(res, 200, { sesiones });
   }
 
   return send(res, 404, { error: "ruta_no_encontrada", mensaje: `${req.method} ${url.pathname} no existe` });
