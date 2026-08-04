@@ -96,6 +96,18 @@ function generarNotasBiomecanicas(ejercicio, profile, idioma = "es") {
         : "Vas a inclinar más el torso al bajar — es normal con tu proporción de piernas.";
     }
   }
+  // Brazo largo respecto al torso alarga el recorrido de la barra en press
+  // horizontal (Nuckols/Beardsley sobre cómo la longitud de brazo afecta
+  // el 1RM comparado entre personas en press banca) — mismo peso relativo
+  // se va a sentir más pesado por el ROM más largo, no por falta de fuerza.
+  if (ejercicio.patron === "empuje_horizontal" && antropometria.brazoCm && antropometria.torsoCm) {
+    const ratioBrazo = antropometria.brazoCm / antropometria.torsoCm;
+    if (ratioBrazo > 1.15) {
+      return en
+        ? "Your arm length means a longer bar path on this lift — the same weight will feel heavier than for someone with shorter arms. Normal, not a strength issue."
+        : "Tu longitud de brazo alarga el recorrido de la barra en este ejercicio — el mismo peso se va a sentir más pesado que para alguien con brazos más cortos. Es normal, no falta de fuerza.";
+    }
+  }
   const lesionRelevante = (lesiones || []).find(
     (l) => l.estado === "resuelta_con_precaucion" && ejercicio.contraindicaciones.includes(l.zona)
   );
@@ -151,6 +163,18 @@ function esMasCompuesto(a, b) {
   return prioridadEquipo(a) - prioridadEquipo(b);
 }
 
+// Cuántos patrones accesorios (opcionales) incluir según el objetivo —
+// no es solo la carga/reps lo que debería cambiar entre fuerza e
+// hipertrofia, sino el propio contenido del día. Fuerza (Starting
+// Strength, 5/3/1) minimiza accesorios y prioriza el/los compuestos
+// principales; hipertrofia (Schoenfeld, Israetel/RP) se beneficia de más
+// volumen distribuido en accesorios; "ambos" es un punto medio.
+function accesoriosPorObjetivo(opcionales, objetivo) {
+  if (objetivo === "fuerza") return [];
+  if (objetivo === "ambos") return opcionales.slice(0, Math.ceil(opcionales.length / 2));
+  return opcionales; // hipertrofia (default)
+}
+
 function seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile) {
   const spec = PATRONES_POR_DIA[nombreDia];
   if (!spec) throw new Error(`Día desconocido: ${nombreDia}`);
@@ -162,7 +186,8 @@ function seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile) {
     if (!ej) throw new SinEjerciciosDisponiblesError(patron);
     return ej;
   });
-  const opcionales = spec.opcionales.map(elegirUno).filter(Boolean);
+  const patronesOpcionales = accesoriosPorObjetivo(spec.opcionales, profile.objetivo);
+  const opcionales = patronesOpcionales.map(elegirUno).filter(Boolean);
   return [...requeridos, ...opcionales];
 }
 

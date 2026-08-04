@@ -469,6 +469,12 @@ async function handleRequest(req, res) {
         equipoDisponible: body.equipoDisponible,
       }, client);
 
+      // El cliente manda la lista completa de lesiones vigentes cada vez
+      // (agregar/editar/quitar son todos "esta es la lista completa
+      // ahora") — se cierran las activas antes de insertar la nueva lista,
+      // si no, quitar una lesión nunca la desactivaba y volver a guardar
+      // la duplicaba en vez de reemplazarla.
+      await db.cerrarLesionesActivas(user.id, client);
       if (body.lesiones?.length) await db.agregarLesiones(user.id, body.lesiones, client);
       for (const [claveMotor, claveStorage] of LEVANTAMIENTOS) {
         if (body.oneRM[claveMotor]) {

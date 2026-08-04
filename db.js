@@ -21,6 +21,11 @@ async function migrar() {
   await pool.query(`ALTER TABLE rutinas_dia ADD COLUMN IF NOT EXISTS fecha_local DATE NOT NULL DEFAULT CURRENT_DATE`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_rutinas_dia_usuario_fecha ON rutinas_dia(user_id, nombre_dia, fecha_local)`);
   await pool.query(`ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS dias_descanso_preferidos SMALLINT[]`);
+  await pool.query(`ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS postura TEXT`);
+  await pool.query(`ALTER TABLE ejercicios DROP CONSTRAINT IF EXISTS ejercicios_postura_check`);
+  await pool.query(
+    `ALTER TABLE ejercicios ADD CONSTRAINT ejercicios_postura_check CHECK (postura IN ('de_pie','sentado','acostado','colgado','de_rodillas'))`
+  );
   await pool.query(`ALTER TABLE ejercicios DROP CONSTRAINT IF EXISTS ejercicios_patron_check`);
   await pool.query(`ALTER TABLE ejercicios ADD CONSTRAINT ejercicios_patron_check CHECK (patron IN (
     'empuje_horizontal', 'empuje_vertical',
@@ -41,8 +46,8 @@ async function sembrarEjercicios() {
   const { ejercicios } = JSON.parse(fs.readFileSync(path.join(__dirname, "exercises-db.json"), "utf8"));
   for (const ej of ejercicios) {
     await pool.query(
-      `INSERT INTO ejercicios (id, nombre, nombre_en, patron, musculo_primario, musculos_secundarios, angulo_grados, equipo_necesario, unilateral, agarre, contraindicaciones)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      `INSERT INTO ejercicios (id, nombre, nombre_en, patron, musculo_primario, musculos_secundarios, angulo_grados, equipo_necesario, unilateral, agarre, contraindicaciones, postura)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        ON CONFLICT (id) DO UPDATE SET
          nombre = EXCLUDED.nombre,
          nombre_en = EXCLUDED.nombre_en,
@@ -53,8 +58,12 @@ async function sembrarEjercicios() {
          equipo_necesario = EXCLUDED.equipo_necesario,
          unilateral = EXCLUDED.unilateral,
          agarre = EXCLUDED.agarre,
-         contraindicaciones = EXCLUDED.contraindicaciones`,
-      [ej.id, ej.nombre, ej.nombreEn || null, ej.patron, ej.musculoPrimario, ej.musculosSecundarios, ej.anguloGrados, ej.equipoNecesario, ej.unilateral, ej.agarre || null, ej.contraindicaciones]
+         contraindicaciones = EXCLUDED.contraindicaciones,
+         postura = EXCLUDED.postura`,
+      [
+        ej.id, ej.nombre, ej.nombreEn || null, ej.patron, ej.musculoPrimario, ej.musculosSecundarios, ej.anguloGrados,
+        ej.equipoNecesario, ej.unilateral, ej.agarre || null, ej.contraindicaciones, ej.postura || null,
+      ]
     );
   }
 }
@@ -211,6 +220,18 @@ async function crearPerfil(userId, p, client = pool) {
 // ---------------------------------------------------------------------
 // LESIONES
 // ---------------------------------------------------------------------
+// Cierra (resuelta_en = now()) todas las lesiones activas del usuario —
+// se llama antes de insertar la lista nueva en cada PUT /profile, porque
+// el cliente manda la lista COMPLETA de lesiones vigentes (agregar,
+// editar o quitar una desde el wizard son todos "guardar esta lista
+// completa"). Sin esto, quitar una lesión en el formulario no la
+// desactivaba nunca (agregarLesiones solo inserta, nunca cierra), y
+// editar/re-guardar la misma lesión duplicaba la fila en vez de
+// reemplazarla — ambos aparecían como "no hace nada" o "se acumulan".
+async function cerrarLesionesActivas(userId, client = pool) {
+  await client.query(`UPDATE lesiones SET resuelta_en = now() WHERE user_id = $1 AND resuelta_en IS NULL`, [userId]);
+}
+
 async function agregarLesiones(userId, lesiones, client = pool) {
   for (const l of lesiones) {
     await client.query(
@@ -265,7 +286,7 @@ async function todosLosEjercicios() {
   const { rows } = await pool.query(
     `SELECT id, nombre, nombre_en AS "nombreEn", patron, musculo_primario AS "musculoPrimario",
             musculos_secundarios AS "musculosSecundarios", angulo_grados AS "anguloGrados",
-            equipo_necesario AS "equipoNecesario", unilateral, agarre, contraindicaciones
+            equipo_necesario AS "equipoNecesario", unilateral, agarre, contraindicaciones, postura
      FROM ejercicios ORDER BY id`
   );
   return rows;
@@ -493,6 +514,7 @@ module.exports = {
   cerrarPerfilVigente,
   crearPerfil,
   agregarLesiones,
+  cerrarLesionesActivas,
   lesionesActivasDeUsuario,
   agregarRegistro1RM,
   ultimoRegistro1RM,

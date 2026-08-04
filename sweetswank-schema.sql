@@ -103,10 +103,14 @@ CREATE TABLE IF NOT EXISTS ejercicios (
   equipo_necesario      TEXT[] NOT NULL,
   unilateral            BOOLEAN NOT NULL DEFAULT false,
   agarre                TEXT CHECK (agarre IN ('prono', 'supino', 'neutro')), -- NULL = no aplica (ej. sentadillas)
-  contraindicaciones    TEXT[] NOT NULL DEFAULT '{}' -- zonas de lesión, mismo enum que `lesiones.zona`
+  contraindicaciones    TEXT[] NOT NULL DEFAULT '{}', -- zonas de lesión, mismo enum que `lesiones.zona`
+  postura               TEXT CHECK (postura IN ('de_pie', 'sentado', 'acostado', 'colgado', 'de_rodillas'))
 );
 ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS nombre_en TEXT;
 ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS agarre TEXT CHECK (agarre IN ('prono', 'supino', 'neutro'));
+ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS postura TEXT;
+ALTER TABLE ejercicios DROP CONSTRAINT IF EXISTS ejercicios_postura_check;
+ALTER TABLE ejercicios ADD CONSTRAINT ejercicios_postura_check CHECK (postura IN ('de_pie', 'sentado', 'acostado', 'colgado', 'de_rodillas'));
 -- Patrones de accesorio/aislamiento agregados para que cada día (empuje,
 -- tirón, piernas) cubra todos los músculos que participan en ese
 -- movimiento, no solo el ejercicio compuesto principal — ver comentario en
