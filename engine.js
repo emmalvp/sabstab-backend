@@ -227,28 +227,39 @@ function conNombreLocalizado(ejercicio, idioma) {
   return { ...ejercicio, nombre: ejercicio.nombreEn };
 }
 
+// Nota biomecánica + advertencia de lesión, ambas dependientes del idioma
+// actual del usuario — nunca deben persistirse en DB, porque si el usuario
+// cambia de idioma después de generar una rutina el texto quedaría obsoleto.
+// Se recalculan en cada lectura (ver server.js /v1/routines/today, camino
+// idempotente) a partir del perfil vigente, no de lo guardado.
+function notasParaEjercicio(ejercicio, profile, idioma = "es") {
+  const en = idioma === "en";
+  const lesionActiva = (profile.lesiones || []).find(
+    (l) => (l.estado === "activa" || l.estado === "en_rehabilitacion") && ejercicio.contraindicaciones.includes(l.zona)
+  );
+  const zonaActiva = lesionActiva && (ZONA_LABEL[lesionActiva.zona]?.[en ? "en" : "es"] || lesionActiva.zona);
+  return {
+    nota: generarNotasBiomecanicas(ejercicio, profile, idioma),
+    advertenciaLesion: lesionActiva
+      ? en
+        ? `Adjusted for your ${zonaActiva} history`
+        : `Ajustado por tu historial en ${zonaActiva}`
+      : null,
+  };
+}
+
 function generarDia(nombreDia, exerciseDB, profile, idioma = "es") {
   const ejercicios = seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile);
-  const en = idioma === "en";
   return ejercicios.map((ej) => {
     const rm = oneRMRelevante(ej, profile.oneRM);
     const carga = prescribirCarga(rm, profile.objetivo);
-    const lesionActiva = (profile.lesiones || []).find(
-      (l) => (l.estado === "activa" || l.estado === "en_rehabilitacion") && ej.contraindicaciones.includes(l.zona)
-    );
-    const zonaActiva = lesionActiva && (ZONA_LABEL[lesionActiva.zona]?.[en ? "en" : "es"] || lesionActiva.zona);
     return {
       exercise: conNombreLocalizado(ej, idioma),
       series: carga.series,
       repeticiones: carga.repeticiones,
       porcentaje1RM: carga.porcentaje1RM,
       cargaKg: carga.cargaKg,
-      nota: generarNotasBiomecanicas(ej, profile, idioma),
-      advertenciaLesion: lesionActiva
-        ? en
-          ? `Adjusted for your ${zonaActiva} history`
-          : `Ajustado por tu historial en ${zonaActiva}`
-        : null,
+      ...notasParaEjercicio(ej, profile, idioma),
     };
   });
 }
@@ -395,5 +406,6 @@ module.exports = {
   generarProgramaSemanal,
   detectarEstancamiento,
   conNombreLocalizado,
+  notasParaEjercicio,
   SinEjerciciosDisponiblesError,
 };

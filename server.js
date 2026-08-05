@@ -515,18 +515,30 @@ async function handleRequest(req, res) {
     // en sweetswank-schema.sql sobre rutinas_dia.
     const rutinaDiaExistenteId = await db.rutinaDiaDeHoy(user.id, nombreDia, fechaLocal);
     if (rutinaDiaExistenteId) {
-      const [filas, registros] = await Promise.all([
+      const [filas, registros, perfilMotorActual] = await Promise.all([
         db.ejerciciosDeRutinaDia(rutinaDiaExistenteId),
         db.registrosDeRutinaDia(rutinaDiaExistenteId),
+        perfilParaMotor(user.id),
       ]);
       const registrosPorEjercicio = agruparRegistrosPorEjercicio(registros);
-      const ejerciciosGuardados = filas.map((re) => ({
-        rutinaEjercicioId: re.rutinaEjercicioId,
-        exercise: engine.conNombreLocalizado(EXERCISE_DB.find((e) => e.id === re.ejercicioId), user.idioma),
-        series: re.series, repeticiones: re.repeticiones, porcentaje1RM: re.porcentaje1RM,
-        cargaKg: re.cargaKg, nota: re.nota, advertenciaLesion: re.advertenciaLesion,
-        seriesRegistradas: registrosPorEjercicio.get(re.rutinaEjercicioId) || [],
-      }));
+      // nota/advertenciaLesion NO se leen de lo guardado en DB: son texto
+      // dependiente del idioma y del perfil vigente (lesiones), y se
+      // recalculan aquí para que reflejen cambios de idioma o de lesiones
+      // hechos después de que el día se generó, sin tocar la selección de
+      // ejercicios ya guardada (ver comentario de idempotencia arriba).
+      const ejerciciosGuardados = filas.map((re) => {
+        const ejercicioDb = EXERCISE_DB.find((e) => e.id === re.ejercicioId);
+        const { nota, advertenciaLesion } = perfilMotorActual
+          ? engine.notasParaEjercicio(ejercicioDb, perfilMotorActual, user.idioma)
+          : { nota: re.nota, advertenciaLesion: re.advertenciaLesion };
+        return {
+          rutinaEjercicioId: re.rutinaEjercicioId,
+          exercise: engine.conNombreLocalizado(ejercicioDb, user.idioma),
+          series: re.series, repeticiones: re.repeticiones, porcentaje1RM: re.porcentaje1RM,
+          cargaKg: re.cargaKg, nota, advertenciaLesion,
+          seriesRegistradas: registrosPorEjercicio.get(re.rutinaEjercicioId) || [],
+        };
+      });
       const supersetsSugeridos = engine.sugerirSupersets(ejerciciosGuardados, user.idioma);
       return send(res, 200, { rutinaDiaId: rutinaDiaExistenteId, nombreDia, ejercicios: ejerciciosGuardados, supersetsSugeridos });
     }
@@ -591,15 +603,25 @@ async function handleRequest(req, res) {
     const rutinaDiaId = url.pathname.split("/")[3];
     const rutinaDia = await db.rutinaDiaDeUsuario(rutinaDiaId, user.id);
     if (!rutinaDia) return send(res, 404, { error: "rutina_no_encontrada" });
-    const [filas, registros] = await Promise.all([db.ejerciciosDeRutinaDia(rutinaDiaId), db.registrosDeRutinaDia(rutinaDiaId)]);
+    const [filas, registros, perfilMotorActual] = await Promise.all([
+      db.ejerciciosDeRutinaDia(rutinaDiaId),
+      db.registrosDeRutinaDia(rutinaDiaId),
+      perfilParaMotor(user.id),
+    ]);
     const registrosPorEjercicio = agruparRegistrosPorEjercicio(registros);
-    const ejercicios = filas.map((re) => ({
-      rutinaEjercicioId: re.rutinaEjercicioId,
-      exercise: engine.conNombreLocalizado(EXERCISE_DB.find((e) => e.id === re.ejercicioId), user.idioma),
-      series: re.series, repeticiones: re.repeticiones, porcentaje1RM: re.porcentaje1RM,
-      cargaKg: re.cargaKg, nota: re.nota, advertenciaLesion: re.advertenciaLesion,
-      seriesRegistradas: registrosPorEjercicio.get(re.rutinaEjercicioId) || [],
-    }));
+    const ejercicios = filas.map((re) => {
+      const ejercicioDb = EXERCISE_DB.find((e) => e.id === re.ejercicioId);
+      const { nota, advertenciaLesion } = perfilMotorActual
+        ? engine.notasParaEjercicio(ejercicioDb, perfilMotorActual, user.idioma)
+        : { nota: re.nota, advertenciaLesion: re.advertenciaLesion };
+      return {
+        rutinaEjercicioId: re.rutinaEjercicioId,
+        exercise: engine.conNombreLocalizado(ejercicioDb, user.idioma),
+        series: re.series, repeticiones: re.repeticiones, porcentaje1RM: re.porcentaje1RM,
+        cargaKg: re.cargaKg, nota, advertenciaLesion,
+        seriesRegistradas: registrosPorEjercicio.get(re.rutinaEjercicioId) || [],
+      };
+    });
     return send(res, 200, { rutinaDiaId: rutinaDia.id, nombreDia: rutinaDia.nombreDia, ejercicios });
   }
 
