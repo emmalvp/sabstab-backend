@@ -114,8 +114,8 @@ async function crearUsuario({ email, passwordHash, nombre }) {
 
 async function buscarUsuarioPorEmail(email) {
   const { rows } = await pool.query(
-    `SELECT id, email, password_hash AS "passwordHash", nombre, idioma, unidad_peso AS "unidadPeso"
-     FROM users WHERE email = $1`,
+    `SELECT id, email, password_hash AS "passwordHash", apple_user_id AS "appleUserId", nombre, idioma, unidad_peso AS "unidadPeso"
+     FROM users WHERE LOWER(email) = LOWER($1)`,
     [email]
   );
   return rows[0] || null;
@@ -123,7 +123,7 @@ async function buscarUsuarioPorEmail(email) {
 
 async function buscarUsuarioPorId(id) {
   const { rows } = await pool.query(
-    `SELECT id, email, password_hash AS "passwordHash", nombre, idioma, unidad_peso AS "unidadPeso"
+    `SELECT id, email, password_hash AS "passwordHash", apple_user_id AS "appleUserId", nombre, idioma, unidad_peso AS "unidadPeso"
      FROM users WHERE id = $1`,
     [id]
   );
@@ -146,7 +146,7 @@ async function crearUsuarioApple({ email, appleUserId, nombre }) {
 
 async function buscarUsuarioPorAppleId(appleUserId) {
   const { rows } = await pool.query(
-    `SELECT id, email, nombre, idioma, unidad_peso AS "unidadPeso"
+    `SELECT id, email, apple_user_id AS "appleUserId", nombre, idioma, unidad_peso AS "unidadPeso"
      FROM users WHERE apple_user_id = $1`,
     [appleUserId]
   );

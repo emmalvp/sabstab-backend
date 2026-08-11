@@ -74,6 +74,10 @@ if (!JWT_SECRET) {
 const JWT_SECRET_EFECTIVO = JWT_SECRET || "clave-dev-insegura-no-usar-en-produccion";
 const TOKEN_EXPIRA_EN = "30d";
 
+function normalizarEmail(email) {
+  return typeof email === "string" ? email.trim().toLowerCase() : "";
+}
+
 async function hashPassword(pw) {
   return bcrypt.hash(pw, 12);
 }
@@ -326,7 +330,7 @@ async function handleRequest(req, res) {
     }
     let user;
     try {
-      user = await db.crearUsuario({ email: body.email, passwordHash: await hashPassword(body.password), nombre: body.nombre });
+      user = await db.crearUsuario({ email: normalizarEmail(body.email), passwordHash: await hashPassword(body.password), nombre: body.nombre });
     } catch (err) {
       if (err instanceof db.EmailEnUsoError) {
         return send(res, 409, { error: "email_en_uso", mensaje: "Ese correo ya está registrado" });
@@ -337,16 +341,17 @@ async function handleRequest(req, res) {
   }
 
   if (req.method === "POST" && url.pathname === "/v1/auth/login") {
-    if (estaBloqueado(body.email)) {
+    const email = normalizarEmail(body.email);
+    if (estaBloqueado(email)) {
       return send(res, 429, { error: "demasiados_intentos", mensaje: "Demasiados intentos fallidos. Intenta de nuevo en unos minutos." });
     }
-    const user = await db.buscarUsuarioPorEmail(body.email);
+    const user = await db.buscarUsuarioPorEmail(email);
     const passwordValida = user?.passwordHash && (await verificarPassword(body.password || "", user.passwordHash));
     if (!passwordValida) {
-      registrarIntentoFallido(body.email);
+      registrarIntentoFallido(email);
       return send(res, 401, { error: "credenciales_invalidas", mensaje: "Correo o contraseña incorrectos" });
     }
-    limpiarIntentos(body.email);
+    limpiarIntentos(email);
     return send(res, 200, { userId: user.id, token: makeToken(user.id) });
   }
 
@@ -373,13 +378,13 @@ async function handleRequest(req, res) {
 
     if (!user) {
       // Puede que ya exista una cuenta con ese email (creada con password) — se vincula en vez de duplicar.
-      if (payload.email) user = await db.buscarUsuarioPorEmail(payload.email);
+      if (payload.email) user = await db.buscarUsuarioPorEmail(normalizarEmail(payload.email));
       if (user) {
         await db.vincularAppleId(user.id, appleUserId);
       } else {
         try {
           user = await db.crearUsuarioApple({
-            email: payload.email || `${appleUserId}@privaterelay.appleid.com`,
+            email: normalizarEmail(payload.email) || `${appleUserId}@privaterelay.appleid.com`,
             appleUserId,
             // Nunca mostrar el prefijo del relay privado de Apple como si
             // fuera el nombre de la persona. Apple solo comparte el nombre
@@ -416,7 +421,7 @@ async function handleRequest(req, res) {
         mensaje: "Define RESEND_API_KEY para habilitar la recuperación de contraseña por email.",
       });
     }
-    const usuario = await db.buscarUsuarioPorEmail(body.email);
+    const usuario = await db.buscarUsuarioPorEmail(normalizarEmail(body.email));
     // Responde 200 exista o no la cuenta — no revelar qué correos están registrados.
     if (usuario) {
       const tokenCrudo = crypto.randomBytes(32).toString("hex");
@@ -505,7 +510,14 @@ async function handleRequest(req, res) {
   if (req.method === "GET" && url.pathname === "/v1/profile") {
     const perfil = await perfilCompleto(user.id);
     if (!perfil) return send(res, 404, { error: "sin_perfil", mensaje: "Todavía no completaste el onboarding" });
-    return send(res, 200, { nombre: user.nombre, idioma: user.idioma, unidadPeso: user.unidadPeso, ...perfil });
+    return send(res, 200, {
+      nombre: user.nombre,
+      email: user.email,
+      authProvider: user.appleUserId ? (user.passwordHash ? "apple_password" : "apple") : "password",
+      idioma: user.idioma,
+      unidadPeso: user.unidadPeso,
+      ...perfil,
+    });
   }
 
   if (req.method === "GET" && url.pathname === "/v1/profile/history") {
