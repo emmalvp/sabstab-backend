@@ -717,8 +717,16 @@ async function handleRequest(req, res) {
     if (!body.rutinaEjercicioId || body.repeticionesCompletadas == null) {
       return send(res, 400, { error: "datos_incompletos", mensaje: "Faltan rutinaEjercicioId o repeticionesCompletadas" });
     }
+    const fechaLocal = typeof body.fechaLocal === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.fechaLocal) ? body.fechaLocal : null;
+    const rutinaEj = await db.rutinaEjercicioRegistrable(body.rutinaEjercicioId, user.id, fechaLocal);
+    if (!rutinaEj) return send(res, 404, { error: "rutina_ejercicio_no_encontrado" });
+    if (!rutinaEj.registrable) {
+      return send(res, 409, {
+        error: "rutina_futura",
+        mensaje: "No puedes registrar series de una rutina futura",
+      });
+    }
     const sesionId = await db.crearRegistroSesion(user.id, body);
-    const rutinaEj = await db.rutinaEjercicioPorId(body.rutinaEjercicioId);
     const repMax = Number((rutinaEj?.repeticiones || "8-12").split("-")[1]) || 10;
     // Sin carga registrada (ej. ejercicio de peso corporal) no hay carga que ajustar.
     const proximaCargaSugeridaKg = typeof body.cargaUsadaKg === "number"

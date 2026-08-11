@@ -400,6 +400,18 @@ async function rutinaEjercicioPorId(id) {
   return rows[0] || null;
 }
 
+async function rutinaEjercicioRegistrable(id, userId, fechaLocal) {
+  const { rows } = await pool.query(
+    `SELECT re.repeticiones, rd.fecha_local AS "fechaLocal",
+            rd.fecha_local <= COALESCE($3::date, CURRENT_DATE) AS registrable
+     FROM rutina_ejercicios re
+     JOIN rutinas_dia rd ON rd.id = re.rutina_dia_id
+     WHERE re.id = $1 AND rd.user_id = $2`,
+    [id, userId, fechaLocal || null]
+  );
+  return rows[0] || null;
+}
+
 async function ultimoRegistroPorEjercicio(userId, ejercicioId) {
   const { rows } = await pool.query(
     `SELECT rs.carga_usada_kg AS "cargaUsadaKg",
@@ -706,6 +718,7 @@ module.exports = {
   registrosDeRutinaDia,
   crearRegistroSesion,
   rutinaEjercicioPorId,
+  rutinaEjercicioRegistrable,
   sustituirEjercicioDeRutina,
   actualizarPrescripcionRutina,
   contarSesionesDeUsuario,
