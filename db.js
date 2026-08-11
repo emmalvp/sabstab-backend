@@ -19,6 +19,7 @@ const pool = new Pool({
 // vez que se agrega una columna (ver server.js `start()`).
 async function migrar() {
   await pool.query(`ALTER TABLE rutinas_dia ADD COLUMN IF NOT EXISTS fecha_local DATE NOT NULL DEFAULT CURRENT_DATE`);
+  await pool.query(`ALTER TABLE rutinas_dia ADD COLUMN IF NOT EXISTS perfil_id UUID REFERENCES perfiles(id)`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_rutinas_dia_usuario_fecha ON rutinas_dia(user_id, nombre_dia, fecha_local)`);
   await pool.query(`ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS dias_descanso_preferidos SMALLINT[]`);
   await pool.query(`ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS postura TEXT`);
@@ -295,10 +296,10 @@ async function todosLosEjercicios() {
 // ---------------------------------------------------------------------
 // RUTINAS
 // ---------------------------------------------------------------------
-async function crearRutinaDia(userId, nombreDia, fechaLocal, client = pool) {
+async function crearRutinaDia(userId, nombreDia, fechaLocal, perfilId = null, client = pool) {
   const { rows } = await client.query(
-    `INSERT INTO rutinas_dia (user_id, nombre_dia, fecha_local) VALUES ($1,$2,COALESCE($3, CURRENT_DATE)) RETURNING id`,
-    [userId, nombreDia, fechaLocal || null]
+    `INSERT INTO rutinas_dia (user_id, nombre_dia, fecha_local, perfil_id) VALUES ($1,$2,COALESCE($3, CURRENT_DATE),$4) RETURNING id`,
+    [userId, nombreDia, fechaLocal || null, perfilId]
   );
   return rows[0].id;
 }
@@ -308,12 +309,26 @@ async function crearRutinaDia(userId, nombreDia, fechaLocal, client = pool) {
 // sustituciones de ejercicio ya hechas). Ver comentario en el schema.
 async function rutinaDiaDeHoy(userId, nombreDia, fechaLocal) {
   const { rows } = await pool.query(
-    `SELECT id FROM rutinas_dia
+    `SELECT id, perfil_id AS "perfilId" FROM rutinas_dia
      WHERE user_id = $1 AND nombre_dia = $2 AND fecha_local = COALESCE($3, CURRENT_DATE)
      ORDER BY generada_en DESC LIMIT 1`,
     [userId, nombreDia, fechaLocal || null]
   );
-  return rows[0]?.id || null;
+  return rows[0] || null;
+}
+
+async function limpiarEjerciciosNoIniciados(rutinaDiaId, userId, client = pool) {
+  await client.query(
+    `DELETE FROM rutina_ejercicios re
+     USING rutinas_dia rd
+     WHERE re.rutina_dia_id = $1 AND rd.id = re.rutina_dia_id AND rd.user_id = $2
+       AND NOT EXISTS (SELECT 1 FROM registros_sesion rs WHERE rs.rutina_ejercicio_id = re.id)`,
+    [rutinaDiaId, userId]
+  );
+}
+
+async function marcarPerfilDeRutina(rutinaDiaId, userId, perfilId, client = pool) {
+  await client.query(`UPDATE rutinas_dia SET perfil_id = $3 WHERE id = $1 AND user_id = $2`, [rutinaDiaId, userId, perfilId]);
 }
 
 async function agregarRutinaEjercicio(rutinaDiaId, re, client = pool) {
@@ -385,6 +400,64 @@ async function rutinaEjercicioPorId(id) {
   return rows[0] || null;
 }
 
+async function ultimoRegistroPorEjercicio(userId, ejercicioId) {
+  const { rows } = await pool.query(
+    `SELECT rs.carga_usada_kg AS "cargaUsadaKg",
+            rs.repeticiones_completadas AS "repeticionesCompletadas",
+            rs.rpe
+     FROM registros_sesion rs
+     JOIN rutina_ejercicios re ON re.id = rs.rutina_ejercicio_id
+     WHERE rs.user_id = $1 AND re.ejercicio_id = $2
+     ORDER BY rs.completada_en DESC LIMIT 1`,
+    [userId, ejercicioId]
+  );
+  const r = rows[0];
+  return r
+    ? {
+        cargaUsadaKg: r.cargaUsadaKg != null ? Number(r.cargaUsadaKg) : null,
+        repeticionesCompletadas: Number(r.repeticionesCompletadas),
+        rpe: r.rpe != null ? Number(r.rpe) : null,
+      }
+    : null;
+}
+
+// Rendimiento comparable por ejercicio y día. Usamos el mejor e1RM de
+// cada sesión (Epley) para detectar una tendencia sin pedirle al usuario
+// que vuelva a probar un 1RM máximo. Se limita a ocho semanas y cuatro
+// exposiciones por ejercicio; es suficiente para detectar una meseta sin
+// convertir una sesión aislada en una decisión de programa.
+async function rendimientoRecientePorEjercicio(userId) {
+  const { rows } = await pool.query(
+    `WITH sesiones AS (
+       SELECT re.ejercicio_id AS "ejercicioId",
+              rd.fecha_local AS fecha,
+              MAX(rs.carga_usada_kg * (1 + rs.repeticiones_completadas / 30.0)) AS valor,
+              ROW_NUMBER() OVER (
+                PARTITION BY re.ejercicio_id
+                ORDER BY rd.fecha_local DESC
+              ) AS posicion
+       FROM registros_sesion rs
+       JOIN rutina_ejercicios re ON re.id = rs.rutina_ejercicio_id
+       JOIN rutinas_dia rd ON rd.id = re.rutina_dia_id
+       WHERE rs.user_id = $1
+         AND rs.carga_usada_kg > 0
+         AND rs.repeticiones_completadas BETWEEN 1 AND 15
+         AND rd.fecha_local >= CURRENT_DATE - INTERVAL '56 days'
+       GROUP BY re.ejercicio_id, rd.fecha_local
+     )
+     SELECT "ejercicioId", fecha, valor
+     FROM sesiones WHERE posicion <= 4
+     ORDER BY "ejercicioId", fecha ASC`,
+    [userId]
+  );
+  const porEjercicio = new Map();
+  for (const row of rows) {
+    if (!porEjercicio.has(row.ejercicioId)) porEjercicio.set(row.ejercicioId, []);
+    porEjercicio.get(row.ejercicioId).push({ fecha: row.fecha, valor: Number(row.valor) });
+  }
+  return [...porEjercicio.values()];
+}
+
 // Sustituye el ejercicio de una fila de rutina_ejercicios por otro (ej.
 // una alternativa elegida en la app porque el original estaba ocupado).
 // Verifica dueño vía el join a rutinas_dia — nunca confiar en el id solo.
@@ -400,6 +473,26 @@ async function sustituirEjercicioDeRutina(rutinaEjercicioId, userId, nuevoEjerci
   return rows[0] || null;
 }
 
+// Reemplaza una prescripción que todavía no fue iniciada cuando el perfil
+// cambia (equipo, objetivo, nivel o duración). Actualizar sólo ejercicio_id
+// dejaría series/carga de la prescripción anterior, por eso se reemplaza la
+// fila completa conservando su id y su posición visual.
+async function actualizarPrescripcionRutina(rutinaEjercicioId, userId, p) {
+  const { rows } = await pool.query(
+    `UPDATE rutina_ejercicios re
+     SET ejercicio_id = $3, series = $4, repeticiones = $5,
+         porcentaje_1rm = $6, carga_kg = $7,
+         nota_biomecanica = $8, advertencia_lesion = $9
+     FROM rutinas_dia rd
+     WHERE re.id = $1 AND re.rutina_dia_id = rd.id AND rd.user_id = $2
+       AND NOT EXISTS (SELECT 1 FROM registros_sesion rs WHERE rs.rutina_ejercicio_id = re.id)
+     RETURNING re.id`,
+    [rutinaEjercicioId, userId, p.ejercicioId, p.series, p.repeticiones,
+      p.porcentaje1RM, p.cargaKg, p.notaBiomecanica || null, p.advertenciaLesion || null]
+  );
+  return rows[0] || null;
+}
+
 // Una "sesión" es un día calendario con al menos una serie registrada —
 // no hay botón de "terminar sesión" en la app, así que no existe un
 // límite explícito entre una sesión y otra más que el propio día. Antes
@@ -407,7 +500,12 @@ async function sustituirEjercicioDeRutina(rutinaEjercicioId, userId, nuevoEjerci
 // inflaba muchísimo el número real de sesiones entrenadas.
 async function contarSesionesDeUsuario(userId) {
   const { rows } = await pool.query(
-    `SELECT COUNT(DISTINCT date_trunc('day', completada_en))::int AS n FROM registros_sesion WHERE user_id = $1`,
+    `SELECT COUNT(DISTINCT dia)::int AS n
+     FROM (
+       SELECT date_trunc('day', completada_en) AS dia FROM registros_sesion WHERE user_id = $1
+       UNION
+       SELECT date_trunc('day', iniciada_en) AS dia FROM sesiones_wearable WHERE user_id = $1
+     ) sesiones`,
     [userId]
   );
   return rows[0].n;
@@ -439,9 +537,15 @@ async function volumenSemanal(userId, semanas = 8) {
 // serie/sesión registrada ese día calendario (UTC).
 async function constancia28dias(userId, dias = 28) {
   const { rows } = await pool.query(
-    `SELECT DISTINCT date_trunc('day', completada_en) AS dia
-     FROM registros_sesion
-     WHERE user_id = $1 AND completada_en >= now() - ($2 || ' days')::interval`,
+    `SELECT DISTINCT dia FROM (
+       SELECT date_trunc('day', completada_en) AS dia
+       FROM registros_sesion
+       WHERE user_id = $1 AND completada_en >= now() - ($2 || ' days')::interval
+       UNION
+       SELECT date_trunc('day', iniciada_en) AS dia
+       FROM sesiones_wearable
+       WHERE user_id = $1 AND iniciada_en >= now() - ($2 || ' days')::interval
+     ) sesiones`,
     [userId, dias]
   );
   const diasConSesion = new Set(rows.map((r) => r.dia.toISOString().slice(0, 10)));
@@ -451,6 +555,22 @@ async function constancia28dias(userId, dias = 28) {
     resultado.push(diasConSesion.has(fecha) ? 1 : 0);
   }
   return resultado;
+}
+
+async function resumenWearable28dias(userId) {
+  const { rows } = await pool.query(
+    `SELECT COUNT(*)::int AS sesiones,
+            COALESCE(SUM(duracion_seg), 0)::bigint AS segundos,
+            MAX(sincronizada_en) AS "ultimaSincronizacion"
+     FROM sesiones_wearable
+     WHERE user_id = $1 AND iniciada_en >= now() - interval '28 days'`,
+    [userId]
+  );
+  return {
+    sesiones: Number(rows[0]?.sesiones || 0),
+    minutos: Math.round(Number(rows[0]?.segundos || 0) / 60),
+    ultimaSincronizacion: rows[0]?.ultimaSincronizacion || null,
+  };
 }
 
 // ---------------------------------------------------------------------
@@ -563,6 +683,8 @@ module.exports = {
   buscarUsuarioPorId,
   actualizarAjustesUsuario,
   actualizarPassword,
+  ultimoRegistroPorEjercicio,
+  rendimientoRecientePorEjercicio,
   eliminarUsuario,
   perfilVigente,
   cerrarPerfilVigente,
@@ -578,14 +700,18 @@ module.exports = {
   agregarRutinaEjercicio,
   rutinaDiaDeUsuario,
   rutinaDiaDeHoy,
+  limpiarEjerciciosNoIniciados,
+  marcarPerfilDeRutina,
   ejerciciosDeRutinaDia,
   registrosDeRutinaDia,
   crearRegistroSesion,
   rutinaEjercicioPorId,
   sustituirEjercicioDeRutina,
+  actualizarPrescripcionRutina,
   contarSesionesDeUsuario,
   volumenSemanal,
   constancia28dias,
+  resumenWearable28dias,
   crearDispositivo,
   desactivarDispositivo,
   dispositivosActivosDeUsuario,

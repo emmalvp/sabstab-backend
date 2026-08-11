@@ -49,7 +49,10 @@ async function enviarEmail({ to, subject, html }) {
 // públicas reales de Apple (JWKS), no una simulación. APPLE_CLIENT_ID es
 // el Services ID / Bundle ID configurado en tu cuenta de Apple Developer
 // para esta app — sin eso, no hay contra qué validar el "aud" del token.
-const APPLE_CLIENT_ID = process.env.APPLE_CLIENT_ID;
+// La app nativa usa su Bundle ID como audience. Se permite sobrescribirlo
+// para otros entornos, pero producción funciona de forma segura aun cuando
+// Render no tenga la variable cargada manualmente.
+const APPLE_CLIENT_ID = process.env.APPLE_CLIENT_ID || "com.sabstab.app";
 const APPLE_JWKS = createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys"));
 
 async function verificarIdentityTokenApple(identityToken) {
@@ -134,6 +137,7 @@ async function perfilParaMotor(userId) {
     oneRM[claveMotor] = await db.ultimoRegistro1RM(userId, claveStorage);
   }
   return {
+    perfilId: perfil.id,
     antropometria: {
       alturaCm: Number(perfil.alturaCm),
       femurCm: Number(perfil.femurCm),
@@ -147,6 +151,7 @@ async function perfilParaMotor(userId) {
     objetivo: perfil.objetivo,
     nivel: perfil.nivel,
     diasPorSemana: perfil.diasPorSemana,
+    duracionSesionMin: perfil.duracionSesionMin,
     equipoDisponible: perfil.equipoDisponible,
   };
 }
@@ -513,13 +518,55 @@ async function handleRequest(req, res) {
     // reusamos tal cual (con cualquier sustitución de ejercicio ya hecha)
     // en vez de generar una nueva y descartar esos cambios — ver comentario
     // en sweetswank-schema.sql sobre rutinas_dia.
-    const rutinaDiaExistenteId = await db.rutinaDiaDeHoy(user.id, nombreDia, fechaLocal);
-    if (rutinaDiaExistenteId) {
-      const [filas, registros, perfilMotorActual] = await Promise.all([
-        db.ejerciciosDeRutinaDia(rutinaDiaExistenteId),
-        db.registrosDeRutinaDia(rutinaDiaExistenteId),
+    const rutinaDiaExistente = await db.rutinaDiaDeHoy(user.id, nombreDia, fechaLocal);
+    if (rutinaDiaExistente) {
+      let [filas, registros, perfilMotorActual] = await Promise.all([
+        db.ejerciciosDeRutinaDia(rutinaDiaExistente.id),
+        db.registrosDeRutinaDia(rutinaDiaExistente.id),
         perfilParaMotor(user.id),
       ]);
+      let rutinaActualizadaPorPerfil = false;
+
+      // Una rutina pertenece a la versión del perfil con la que se creó.
+      // Si equipo/objetivo/nivel/duración cambian, conservamos únicamente
+      // los ejercicios que el usuario ya empezó y regeneramos el resto con
+      // el perfil vigente. Así nunca desaparecen series registradas, pero
+      // tampoco quedan máquinas o barras pendientes en un perfil corporal.
+      if (perfilMotorActual && rutinaDiaExistente.perfilId !== perfilMotorActual.perfilId) {
+        const registrosPorEjercicioPrevios = agruparRegistrosPorEjercicio(registros);
+        const patronesIniciados = new Set(
+          filas
+            .filter((re) => (registrosPorEjercicioPrevios.get(re.rutinaEjercicioId) || []).length > 0)
+            .map((re) => EXERCISE_DB.find((e) => e.id === re.ejercicioId)?.patron)
+            .filter(Boolean)
+        );
+        const nuevaPrescripcion = engine
+          .generarDia(nombreDia, EXERCISE_DB, perfilMotorActual, user.idioma)
+          .map((p, orden) => ({ ...p, orden }))
+          .filter((p) => !patronesIniciados.has(p.exercise.patron));
+
+        await db.transaccion(async (client) => {
+          await db.limpiarEjerciciosNoIniciados(rutinaDiaExistente.id, user.id, client);
+          for (const p of nuevaPrescripcion) {
+            await db.agregarRutinaEjercicio(rutinaDiaExistente.id, {
+              ejercicioId: p.exercise.id,
+              orden: p.orden,
+              series: p.series,
+              repeticiones: p.repeticiones,
+              porcentaje1RM: p.porcentaje1RM,
+              cargaKg: p.cargaKg,
+              notaBiomecanica: p.nota,
+              advertenciaLesion: p.advertenciaLesion,
+            }, client);
+          }
+          await db.marcarPerfilDeRutina(rutinaDiaExistente.id, user.id, perfilMotorActual.perfilId, client);
+        });
+        [filas, registros] = await Promise.all([
+          db.ejerciciosDeRutinaDia(rutinaDiaExistente.id),
+          db.registrosDeRutinaDia(rutinaDiaExistente.id),
+        ]);
+        rutinaActualizadaPorPerfil = true;
+      }
       const registrosPorEjercicio = agruparRegistrosPorEjercicio(registros);
       // nota/advertenciaLesion NO se leen de lo guardado en DB: son texto
       // dependiente del idioma y del perfil vigente (lesiones), y se
@@ -540,15 +587,27 @@ async function handleRequest(req, res) {
         };
       });
       const supersetsSugeridos = engine.sugerirSupersets(ejerciciosGuardados, user.idioma);
-      return send(res, 200, { rutinaDiaId: rutinaDiaExistenteId, nombreDia, ejercicios: ejerciciosGuardados, supersetsSugeridos });
+      return send(res, 200, { rutinaDiaId: rutinaDiaExistente.id, nombreDia, ejercicios: ejerciciosGuardados, supersetsSugeridos, rutinaActualizadaPorPerfil });
     }
 
     const perfilMotor = await perfilParaMotor(user.id);
     if (!perfilMotor) return send(res, 404, { error: "sin_perfil", mensaje: "Completa tu perfil primero" });
-    const prescritos = engine.generarDia(nombreDia, EXERCISE_DB, perfilMotor, user.idioma);
+    const prescritosBase = engine.generarDia(nombreDia, EXERCISE_DB, perfilMotor, user.idioma);
+    const prescritos = await Promise.all(
+      prescritosBase.map(async (p) => {
+        const ultimo = await db.ultimoRegistroPorEjercicio(user.id, p.exercise.id);
+        if (!ultimo || ultimo.cargaUsadaKg == null) return p;
+        const repMax = Number(String(p.repeticiones).split("-")[1]) || 10;
+        return {
+          ...p,
+          cargaKg: engine.ajustarProximaCarga(ultimo.cargaUsadaKg, repMax, ultimo),
+          ajustadaPorResultados: true,
+        };
+      })
+    );
 
     const { rutinaDiaId, ejerciciosGuardados } = await db.transaccion(async (client) => {
-      const rutinaDiaId = await db.crearRutinaDia(user.id, nombreDia, fechaLocal, client);
+      const rutinaDiaId = await db.crearRutinaDia(user.id, nombreDia, fechaLocal, perfilMotor.perfilId, client);
       const ejerciciosGuardados = [];
       for (let i = 0; i < prescritos.length; i++) {
         const p = prescritos[i];
@@ -575,17 +634,14 @@ async function handleRequest(req, res) {
     const msPorDia = 24 * 60 * 60 * 1000;
     const semanasEnRutinaActual = Math.floor((Date.now() - new Date(perfil.vigenteDesde).getTime()) / (7 * msPorDia));
 
+    // Desde la cuarta semana revisamos resultados, pero el calendario por
+    // sí solo nunca obliga a cambiar. La señal se activa únicamente con
+    // tres exposiciones comparables sin progreso; si todavía mejora, se
+    // conserva lo que funciona.
     let motivoCambio = null;
-    if (semanasEnRutinaActual >= 6) {
-      motivoCambio = "tiempo";
-    } else {
-      for (const [, claveStorage] of LEVANTAMIENTOS) {
-        const historial = await db.historial1RM(user.id, claveStorage);
-        if (engine.detectarEstancamiento(historial)) {
-          motivoCambio = "estancamiento";
-          break;
-        }
-      }
+    if (semanasEnRutinaActual >= 4) {
+      const historiales = await db.rendimientoRecientePorEjercicio(user.id);
+      if (historiales.some(engine.detectarEstancamientoPorSesiones)) motivoCambio = "estancamiento";
     }
 
     return send(res, 200, {
@@ -594,6 +650,7 @@ async function handleRequest(req, res) {
       diaSemanaHoy,
       diaSugeridoHoy,
       semanasEnRutinaActual,
+      revisionActiva: semanasEnRutinaActual >= 4,
       sugerenciaCambiarRutina: motivoCambio !== null,
       motivoCambio,
     });
@@ -671,21 +728,39 @@ async function handleRequest(req, res) {
   }
 
   if (req.method === "GET" && url.pathname === "/v1/progress/summary") {
-    const totalSesiones = await db.contarSesionesDeUsuario(user.id);
-    const progreso1RM = [];
-    for (const [claveMotor, claveStorage] of LEVANTAMIENTOS) {
-      const historial = await db.historial1RM(user.id, claveStorage);
-      if (historial.length > 0) {
-        progreso1RM.push({ levantamiento: claveMotor, antes: historial[0].valor, ahora: historial[historial.length - 1].valor });
-      }
-    }
-    const volumenSemanal = await db.volumenSemanal(user.id, 8);
-    const constancia28dias = await db.constancia28dias(user.id, 28);
-    return send(res, 200, { rachaSesiones: totalSesiones, totalSesiones, volumenSemanal, progreso1RM, constancia28dias });
+    const [totalSesiones, historiales, volumenSemanal, constancia28dias, wearable28dias, perfil] = await Promise.all([
+      db.contarSesionesDeUsuario(user.id),
+      Promise.all(LEVANTAMIENTOS.map(([, claveStorage]) => db.historial1RM(user.id, claveStorage))),
+      db.volumenSemanal(user.id, 8),
+      db.constancia28dias(user.id, 28),
+      db.resumenWearable28dias(user.id),
+      db.perfilVigente(user.id),
+    ]);
+    const progreso1RM = LEVANTAMIENTOS.flatMap(([claveMotor], i) => {
+      const historial = historiales[i];
+      return historial.length > 0
+        ? [{ levantamiento: claveMotor, antes: historial[0].valor, ahora: historial[historial.length - 1].valor }]
+        : [];
+    });
+    const equipo = perfil?.equipoDisponible || [];
+    const fuerzaOpcional = perfil?.nivel === "principiante" || equipo.every((e) => e === "peso_corporal" || e === "banda");
+    return send(res, 200, {
+      rachaSesiones: totalSesiones,
+      totalSesiones,
+      volumenSemanal,
+      progreso1RM,
+      constancia28dias,
+      wearable28dias,
+      fuerzaOpcional,
+    });
   }
 
   // ---------------- AJUSTES / DISPOSITIVOS ----------------
   if (req.method === "PATCH" && url.pathname === "/v1/settings") {
+    if (body.nombre !== undefined && (typeof body.nombre !== "string" || body.nombre.trim().length < 2 || body.nombre.trim().length > 80)) {
+      return send(res, 400, { error: "nombre_invalido", mensaje: "El nombre debe tener entre 2 y 80 caracteres" });
+    }
+    if (typeof body.nombre === "string") body.nombre = body.nombre.trim();
     await db.actualizarAjustesUsuario(user.id, body);
     return send(res, 200, { ok: true });
   }

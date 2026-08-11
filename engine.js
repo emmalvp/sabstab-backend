@@ -206,14 +206,25 @@ function oneRMRelevante(ejercicio, oneRM) {
   }
 }
 
-function prescribirCarga(oneRMBase, objetivo) {
+function seriesPorPerfil(seriesBase, nivel, duracionSesionMin) {
+  let series = seriesBase;
+  if (nivel === "principiante") series = Math.min(series, 2);
+  if (nivel === "avanzado") series += 1;
+  if (duracionSesionMin && duracionSesionMin <= 30) series -= 1;
+  // Más tiempo disponible no obliga a rellenar tres horas con volumen sin
+  // beneficio. Sólo evita recortar; el desempeño registrado guía aumentos.
+  return Math.max(2, Math.min(5, series));
+}
+
+function prescribirCarga(oneRMBase, objetivo, nivel, duracionSesionMin) {
   const rango = RANGOS_POR_OBJETIVO[objetivo] || RANGOS_POR_OBJETIVO.hipertrofia;
+  const series = seriesPorPerfil(rango.series, nivel, duracionSesionMin);
   const pctPromedio = (rango.pctMin + rango.pctMax) / 2;
   if (!oneRMBase) {
-    return { series: rango.series, repeticiones: `${rango.repMin}-${rango.repMax}`, porcentaje1RM: null, cargaKg: null };
+    return { series, repeticiones: `${rango.repMin}-${rango.repMax}`, porcentaje1RM: null, cargaKg: null };
   }
   return {
-    series: rango.series,
+    series,
     repeticiones: `${rango.repMin}-${rango.repMax}`,
     porcentaje1RM: Math.round(pctPromedio * 100),
     cargaKg: redondearCarga(oneRMBase * pctPromedio),
@@ -252,7 +263,7 @@ function generarDia(nombreDia, exerciseDB, profile, idioma = "es") {
   const ejercicios = seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile);
   return ejercicios.map((ej) => {
     const rm = oneRMRelevante(ej, profile.oneRM);
-    const carga = prescribirCarga(rm, profile.objetivo);
+    const carga = prescribirCarga(rm, profile.objetivo, profile.nivel, profile.duracionSesionMin);
     return {
       exercise: conNombreLocalizado(ej, idioma),
       series: carga.series,
@@ -395,6 +406,19 @@ function detectarEstancamiento(historial, ventanaDias = 42, minDiasEntrePuntos =
   return ultimo.valor <= primero.valor;
 }
 
+// Una rutina no se cambia solo porque pasó cierto número de semanas. Se
+// considera meseta cuando existen al menos tres exposiciones comparables
+// y el e1RM más reciente no supera en al menos 1% al primero. El margen
+// evita interpretar redondeos normales de discos/repeticiones como avance.
+function detectarEstancamientoPorSesiones(historial) {
+  if (!Array.isArray(historial) || historial.length < 3) return false;
+  const ultimas = historial.slice(-3);
+  const primero = Number(ultimas[0].valor);
+  const ultimo = Number(ultimas[2].valor);
+  if (!(primero > 0) || !(ultimo > 0)) return false;
+  return ultimo < primero * 1.01;
+}
+
 module.exports = {
   EXERCISE_DB,
   estimate1RM,
@@ -405,6 +429,7 @@ module.exports = {
   sugerirSupersets,
   generarProgramaSemanal,
   detectarEstancamiento,
+  detectarEstancamientoPorSesiones,
   conNombreLocalizado,
   notasParaEjercicio,
   SinEjerciciosDisponiblesError,

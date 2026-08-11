@@ -132,11 +132,13 @@ ALTER TABLE ejercicios ADD CONSTRAINT ejercicios_patron_check CHECK (patron IN (
 CREATE TABLE IF NOT EXISTS rutinas_dia (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  perfil_id         UUID REFERENCES perfiles(id),
   nombre_dia        TEXT NOT NULL, -- 'Empuje', 'Tirón', 'Piernas'
   fecha_local       DATE NOT NULL DEFAULT CURRENT_DATE, -- fecha de calendario del dispositivo, no del servidor
   generada_en       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE rutinas_dia ADD COLUMN IF NOT EXISTS fecha_local DATE NOT NULL DEFAULT CURRENT_DATE;
+ALTER TABLE rutinas_dia ADD COLUMN IF NOT EXISTS perfil_id UUID REFERENCES perfiles(id);
 CREATE INDEX IF NOT EXISTS idx_rutinas_dia_usuario_fecha ON rutinas_dia(user_id, nombre_dia, fecha_local);
 
 CREATE TABLE IF NOT EXISTS rutina_ejercicios (
