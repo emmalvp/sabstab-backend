@@ -381,7 +381,11 @@ async function handleRequest(req, res) {
           user = await db.crearUsuarioApple({
             email: payload.email || `${appleUserId}@privaterelay.appleid.com`,
             appleUserId,
-            nombre: body.nombre || (payload.email ? payload.email.split("@")[0] : "Usuario Apple"),
+            // Nunca mostrar el prefijo del relay privado de Apple como si
+            // fuera el nombre de la persona. Apple solo comparte el nombre
+            // en la primera autorización; si no vino, usamos un nombre
+            // neutro que la persona puede cambiar en Ajustes.
+            nombre: body.nombre || "Atleta SabStab",
           });
           esNuevoUsuario = true;
         } catch (err) {
@@ -391,6 +395,13 @@ async function handleRequest(req, res) {
           throw err;
         }
       }
+    }
+    // Apple solo entrega nombre/email la primera vez que la persona
+    // autoriza la app. Si sí los entrega, guardamos el nombre real también
+    // al vincular una cuenta existente, en vez de conservar un alias viejo.
+    if (typeof body.nombre === "string" && body.nombre.trim().length >= 2) {
+      await db.actualizarAjustesUsuario(user.id, { nombre: body.nombre.trim() });
+      user.nombre = body.nombre.trim();
     }
     return send(res, 200, { userId: user.id, token: makeToken(user.id), esNuevoUsuario });
   }
@@ -791,8 +802,9 @@ async function handleRequest(req, res) {
   }
 
   if (req.method === "DELETE" && url.pathname === "/v1/auth/account") {
-    await db.eliminarUsuario(user.id);
-    return send(res, 200, { ok: true });
+    const deleted = await db.eliminarUsuario(user.id);
+    if (!deleted) return send(res, 404, { error: "cuenta_no_encontrada", mensaje: "La cuenta ya no existe" });
+    return send(res, 200, { ok: true, deleted: true });
   }
 
   if (req.method === "GET" && url.pathname === "/v1/devices") {

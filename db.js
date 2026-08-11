@@ -166,7 +166,8 @@ async function actualizarPassword(userId, passwordHash) {
 // password_reset_tokens) tienen ON DELETE CASCADE, así que esto basta
 // para cumplir con el requisito de Google Play de eliminar cuenta y datos.
 async function eliminarUsuario(userId) {
-  await pool.query(`DELETE FROM users WHERE id = $1`, [userId]);
+  const { rowCount } = await pool.query(`DELETE FROM users WHERE id = $1`, [userId]);
+  return rowCount === 1;
 }
 
 async function actualizarAjustesUsuario(id, cambios) {
