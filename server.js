@@ -824,6 +824,13 @@ async function handleRequest(req, res) {
     if (!Array.isArray(body.sesiones) || body.sesiones.length === 0) {
       return send(res, 400, { error: "datos_incompletos", mensaje: "Falta sesiones (array no vacío)" });
     }
+    const dispositivos = await db.dispositivosActivosDeUsuario(user.id);
+    if (!dispositivos.some((device) => device.tipo === body.fuente)) {
+      return send(res, 403, {
+        error: "salud_no_conectada",
+        mensaje: "Conecta los datos de salud en Ajustes antes de sincronizar",
+      });
+    }
     for (const s of body.sesiones) {
       if (!s.externalId || !s.iniciadaEn || !s.finalizadaEn) {
         return send(res, 400, { error: "datos_incompletos", mensaje: "Cada sesión necesita externalId, iniciadaEn y finalizadaEn" });
