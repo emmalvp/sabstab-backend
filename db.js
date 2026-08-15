@@ -98,12 +98,12 @@ async function transaccion(fn) {
 // ---------------------------------------------------------------------
 // USUARIOS
 // ---------------------------------------------------------------------
-async function crearUsuario({ email, passwordHash, nombre }) {
+async function crearUsuario({ email, passwordHash, nombre, idioma = "en", unidadPeso = "lb" }) {
   try {
     const { rows } = await pool.query(
-      `INSERT INTO users (email, password_hash, nombre) VALUES ($1, $2, $3)
+      `INSERT INTO users (email, password_hash, nombre, idioma, unidad_peso) VALUES ($1, $2, $3, $4, $5)
        RETURNING id, email, nombre, idioma, unidad_peso AS "unidadPeso"`,
-      [email, passwordHash, nombre]
+      [email, passwordHash, nombre, idioma, unidadPeso]
     );
     return rows[0];
   } catch (err) {
@@ -130,12 +130,12 @@ async function buscarUsuarioPorId(id) {
   return rows[0] || null;
 }
 
-async function crearUsuarioApple({ email, appleUserId, nombre }) {
+async function crearUsuarioApple({ email, appleUserId, nombre, idioma = "en", unidadPeso = "lb" }) {
   try {
     const { rows } = await pool.query(
-      `INSERT INTO users (email, apple_user_id, nombre) VALUES ($1, $2, $3)
+      `INSERT INTO users (email, apple_user_id, nombre, idioma, unidad_peso) VALUES ($1, $2, $3, $4, $5)
        RETURNING id, email, nombre, idioma, unidad_peso AS "unidadPeso"`,
-      [email, appleUserId, nombre]
+      [email, appleUserId, nombre, idioma, unidadPeso]
     );
     return rows[0];
   } catch (err) {

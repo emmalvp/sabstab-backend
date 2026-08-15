@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash     TEXT, -- NULL si la cuenta se creó vía Sign in with Apple
   apple_user_id     TEXT UNIQUE, -- 'sub' del identityToken de Apple
   nombre            TEXT NOT NULL,
-  idioma            TEXT NOT NULL DEFAULT 'es' CHECK (idioma IN ('es', 'en')),
-  unidad_peso       TEXT NOT NULL DEFAULT 'kg' CHECK (unidad_peso IN ('kg', 'lb')),
+  idioma            TEXT NOT NULL DEFAULT 'en' CHECK (idioma IN ('es', 'en')),
+  unidad_peso       TEXT NOT NULL DEFAULT 'lb' CHECK (unidad_peso IN ('kg', 'lb')),
   creado_en         TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT chk_users_metodo_auth CHECK (password_hash IS NOT NULL OR apple_user_id IS NOT NULL)
 );

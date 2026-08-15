@@ -330,7 +330,13 @@ async function handleRequest(req, res) {
     }
     let user;
     try {
-      user = await db.crearUsuario({ email: normalizarEmail(body.email), passwordHash: await hashPassword(body.password), nombre: body.nombre });
+      user = await db.crearUsuario({
+        email: normalizarEmail(body.email),
+        passwordHash: await hashPassword(body.password),
+        nombre: body.nombre,
+        idioma: body.idioma === "es" ? "es" : "en",
+        unidadPeso: body.unidadPeso === "kg" ? "kg" : "lb",
+      });
     } catch (err) {
       if (err instanceof db.EmailEnUsoError) {
         return send(res, 409, { error: "email_en_uso", mensaje: "Ese correo ya está registrado" });
@@ -391,6 +397,8 @@ async function handleRequest(req, res) {
             // en la primera autorización; si no vino, usamos un nombre
             // neutro que la persona puede cambiar en Ajustes.
             nombre: body.nombre || "Atleta SabStab",
+            idioma: body.idioma === "es" ? "es" : "en",
+            unidadPeso: body.unidadPeso === "kg" ? "kg" : "lb",
           });
           esNuevoUsuario = true;
         } catch (err) {
