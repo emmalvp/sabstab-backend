@@ -773,7 +773,7 @@ async function handleRequest(req, res) {
       db.volumenSemanal(user.id, 8),
       db.constancia28dias(user.id, 28),
       db.resumenWearable28dias(user.id),
-      db.perfilVigente(user.id),
+      perfilCompleto(user.id),
     ]);
     const progreso1RM = LEVANTAMIENTOS.flatMap(([claveMotor], i) => {
       const historial = historiales[i];
