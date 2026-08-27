@@ -783,14 +783,22 @@ async function handleRequest(req, res) {
     });
     const equipo = perfil?.equipoDisponible || [];
     const fuerzaOpcional = perfil?.nivel === "principiante" || equipo.every((e) => e === "peso_corporal" || e === "banda");
+    const programaSemanal = perfil
+      ? engine.generarProgramaSemanal(perfil.diasPorSemana, perfil.diasDescansoPreferidos)
+      : null;
+    const racha = programaSemanal
+      ? engine.calcularRachaActual(constancia28dias, programaSemanal, diaSemanaDesdeFechaLocal())
+      : 0;
+    const indiceFuerza = engine.calcularIndiceFuerza(perfil?.oneRM, perfil?.pesoCorporalKg);
     return send(res, 200, {
-      rachaSesiones: totalSesiones,
+      racha,
       totalSesiones,
       volumenSemanal,
       progreso1RM,
       constancia28dias,
       wearable28dias,
       fuerzaOpcional,
+      indiceFuerza,
     });
   }
 

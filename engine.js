@@ -386,6 +386,80 @@ function generarProgramaSemanal(diasPorSemana, diasDescansoPreferidos = null) {
 }
 
 // ---------------------------------------------------------------------------
+// RACHA ACTUAL — días consecutivos sin fallar un día de entreno programado
+// ---------------------------------------------------------------------------
+// Contar sesiones totales como "racha" (como se hacía antes) nunca baja,
+// así que no premia la constancia reciente. Una racha real tampoco puede
+// romperse en cada día de descanso programado, o cualquier split de 3-4
+// días/semana la reiniciaría cada semana sin falta — varios usuarios de
+// Liftoff mencionan justo eso como algo que sí les gusta de su streak.
+// Solo cuenta como fallo un día de entreno programado que ya pasó y no
+// tiene ninguna sesión (propia o de wearable) registrada.
+function calcularRachaActual(dias28, programaSemanal, diaSemanaHoy) {
+  let racha = 0;
+  for (let i = dias28.length - 1; i >= 0; i--) {
+    const diasAtras = dias28.length - 1 - i;
+    const diaSemana = ((diaSemanaHoy - diasAtras) % 7 + 7) % 7;
+    const esDescanso = programaSemanal.find((d) => d.diaSemana === diaSemana)?.descanso;
+    const entrenado = !!dias28[i];
+    if (entrenado) {
+      racha++;
+      continue;
+    }
+    if (esDescanso) continue;
+    if (diasAtras === 0) continue; // hoy no ha terminado, no cuenta en contra todavía
+    break;
+  }
+  return racha;
+}
+
+// ---------------------------------------------------------------------------
+// ÍNDICE DE FUERZA — un solo número justo, no un rango por cada ejercicio
+// ---------------------------------------------------------------------------
+// Apps de ranking por ejercicio (ej. Liftoff) dan rangos altos en máquinas
+// o aislados con poca dificultad relativa (un hex bar shrug puede rankear
+// "Titán" con mucho menos esfuerzo que un press banca), porque comparan
+// cargas absolutas sin ajustar por el movimiento. Acá solo se puntúan los
+// 4 básicos con barra que ya se piden en el onboarding (sentadilla, press
+// banca, peso muerto, press militar), normalizados por peso corporal —
+// mismo criterio para todos sin importar en qué aparato se hizo el resto
+// del entreno. Las bandas [novato, intermedio, avanzado, elite] son
+// aproximaciones generales para levantadores recreativos, no una tabla de
+// una federación específica.
+const BANDAS_FUERZA_RELATIVA = {
+  sentadilla: [0, 0.75, 1.25, 1.75, 2.25],
+  pressBanca: [0, 0.5, 0.9, 1.25, 1.75],
+  pesoMuerto: [0, 1.0, 1.5, 2.0, 2.5],
+  pressMilitar: [0, 0.35, 0.55, 0.8, 1.1],
+};
+
+function indiceDesdeRatio(ratio, bandas) {
+  for (let i = 1; i < bandas.length; i++) {
+    if (ratio <= bandas[i]) {
+      const desde = bandas[i - 1];
+      const hasta = bandas[i];
+      const base = (i - 1) * 25;
+      return base + (25 * (ratio - desde)) / (hasta - desde || 1);
+    }
+  }
+  return 100;
+}
+
+function calcularIndiceFuerza(oneRM, pesoCorporalKg) {
+  if (!oneRM || !pesoCorporalKg) return null;
+  const detalle = Object.entries(BANDAS_FUERZA_RELATIVA)
+    .filter(([levantamiento]) => typeof oneRM[levantamiento] === "number" && oneRM[levantamiento] > 0)
+    .map(([levantamiento, bandas]) => {
+      const ratio = oneRM[levantamiento] / pesoCorporalKg;
+      const indice = Math.round(Math.min(100, Math.max(0, indiceDesdeRatio(ratio, bandas))));
+      return { levantamiento, ratio: Math.round(ratio * 100) / 100, indice };
+    });
+  if (detalle.length === 0) return null;
+  const valor = Math.round(detalle.reduce((suma, d) => suma + d.indice, 0) / detalle.length);
+  return { valor, detalle };
+}
+
+// ---------------------------------------------------------------------------
 // DETECCIÓN DE ESTANCAMIENTO — señal para sugerir cambiar de rutina
 // ---------------------------------------------------------------------------
 // Mira solo los puntos dentro de los últimos `ventanaDias` (por defecto 6
@@ -428,6 +502,8 @@ module.exports = {
   redondearCarga,
   sugerirSupersets,
   generarProgramaSemanal,
+  calcularRachaActual,
+  calcularIndiceFuerza,
   detectarEstancamiento,
   detectarEstancamientoPorSesiones,
   conNombreLocalizado,
