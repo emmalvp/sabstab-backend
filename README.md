@@ -91,6 +91,8 @@ curl "http://localhost:4000/v1/exercises/alternatives?ejercicioId=press_banca_pl
 expiración de 30 días para los tokens. `/auth/login` bloquea una cuenta
 15 minutos después de 5 intentos fallidos (`429 demasiados_intentos`),
 como sugiere `sweetswank-api-spec.md`.
+`/auth/refresh` rota un JWT firmado durante los 7 días posteriores a su
+expiración; fuera de esa ventana se exige iniciar sesión nuevamente.
 
 ### Sign in with Apple (`POST /auth/apple`)
 

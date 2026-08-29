@@ -29,6 +29,17 @@ Auth: Bearer token (JWT) en el header `Authorization`, salvo donde se indique.
 ```
 `401` si las credenciales no coinciden.
 
+### `POST /auth/refresh`
+```json
+// Request — también acepta un JWT expirado hace 7 días o menos
+{ "token": "jwt..." }
+// Response 200
+{ "userId": "uuid", "token": "jwt nuevo..." }
+```
+`401 sesion_no_renovable` si la firma no es válida, la cuenta ya no existe
+o terminó la ventana de renovación. La app intenta esta ruta una sola vez
+cuando un endpoint autenticado responde `401 no_autenticado`.
+
 ### `POST /auth/apple` — "Continuar con Apple" del login
 ```json
 // Request

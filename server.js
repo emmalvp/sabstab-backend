@@ -73,6 +73,7 @@ if (!JWT_SECRET) {
 }
 const JWT_SECRET_EFECTIVO = JWT_SECRET || "clave-dev-insegura-no-usar-en-produccion";
 const TOKEN_EXPIRA_EN = "30d";
+const REFRESH_GRACE_SECONDS = 7 * 24 * 60 * 60;
 
 function normalizarEmail(email) {
   return typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -90,6 +91,17 @@ function makeToken(userId) {
 function readToken(token) {
   try {
     return jwt.verify(token, JWT_SECRET_EFECTIVO);
+  } catch {
+    return null;
+  }
+}
+
+function readRefreshableToken(token) {
+  try {
+    const payload = jwt.verify(token, JWT_SECRET_EFECTIVO, { ignoreExpiration: true });
+    const now = Math.floor(Date.now() / 1000);
+    if (!payload?.userId || !payload.exp || now - payload.exp > REFRESH_GRACE_SECONDS) return null;
+    return payload;
   } catch {
     return null;
   }
@@ -358,6 +370,21 @@ async function handleRequest(req, res) {
       return send(res, 401, { error: "credenciales_invalidas", mensaje: "Correo o contraseña incorrectos" });
     }
     limpiarIntentos(email);
+    return send(res, 200, { userId: user.id, token: makeToken(user.id) });
+  }
+
+  // Renueva una sesión firmada que acaba de expirar. La ventana limitada
+  // evita conservar sesiones indefinidamente y permite que la app recupere
+  // el acceso sin expulsar al usuario en mitad de un entrenamiento.
+  if (req.method === "POST" && url.pathname === "/v1/auth/refresh") {
+    const payload = readRefreshableToken(body.token || "");
+    if (!payload) {
+      return send(res, 401, { error: "sesion_no_renovable", mensaje: "La sesión ya no se puede renovar" });
+    }
+    const user = await db.buscarUsuarioPorId(payload.userId);
+    if (!user) {
+      return send(res, 401, { error: "sesion_no_renovable", mensaje: "La cuenta ya no existe" });
+    }
     return send(res, 200, { userId: user.id, token: makeToken(user.id) });
   }
 
