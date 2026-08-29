@@ -197,13 +197,35 @@ function oneRMRelevante(ejercicio, oneRM) {
   // a alguien "8-12 reps a 72kg" en una flexión no tiene sentido. Progresa
   // por reps (rama sin oneRMBase de prescribirCarga), no por %1RM.
   if (esSoloPesoCorporal(ejercicio)) return null;
-  switch (ejercicio.patron) {
-    case "sentadilla": return oneRM.sentadilla || null;
-    case "bisagra_cadera": return oneRM.pesoMuerto || null;
-    case "empuje_horizontal": return oneRM.pressBanca || null;
-    case "empuje_vertical": return oneRM.pressMilitar || null;
-    default: return null;
+
+  // Un 1RM solo prescribe carga para el levantamiento exacto en el que se
+  // midió. Transferir, por ejemplo, el 1RM de peso muerto a buenos días o
+  // hip thrust puede producir cargas peligrosamente altas aunque compartan
+  // el patrón de bisagra. Las variantes/accesorios empiezan por sensación y
+  // progresan únicamente desde una carga que el usuario haya registrado.
+  const referenciaDirecta = {
+    sentadilla_trasera_barra: "sentadilla",
+    peso_muerto_convencional: "pesoMuerto",
+    press_banca_plano_barra: "pressBanca",
+    press_militar_barra_de_pie: "pressMilitar",
+  }[ejercicio.id];
+  return referenciaDirecta ? oneRM[referenciaDirecta] || null : null;
+}
+
+function normalizarCargaGuardada(ejercicio, porcentaje1RM, cargaKg) {
+  // Corrige respuestas de rutinas creadas antes de la regla estricta. Un
+  // porcentaje guardado en una variante indica que se heredó del básico;
+  // no lo exponemos como recomendación aunque siga en la fila histórica.
+  const tieneReferenciaDirecta = oneRMRelevante(ejercicio, {
+    sentadilla: 1,
+    pesoMuerto: 1,
+    pressBanca: 1,
+    pressMilitar: 1,
+  }) != null;
+  if (!tieneReferenciaDirecta && porcentaje1RM != null) {
+    return { porcentaje1RM: null, cargaKg: null };
   }
+  return { porcentaje1RM, cargaKg };
 }
 
 function seriesPorPerfil(seriesBase, nivel, duracionSesionMin) {
@@ -508,5 +530,7 @@ module.exports = {
   detectarEstancamientoPorSesiones,
   conNombreLocalizado,
   notasParaEjercicio,
+  oneRMRelevante,
+  normalizarCargaGuardada,
   SinEjerciciosDisponiblesError,
 };

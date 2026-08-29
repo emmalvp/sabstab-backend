@@ -633,14 +633,15 @@ async function handleRequest(req, res) {
       // ejercicios ya guardada (ver comentario de idempotencia arriba).
       const ejerciciosGuardados = filas.map((re) => {
         const ejercicioDb = EXERCISE_DB.find((e) => e.id === re.ejercicioId);
+        const cargaSegura = engine.normalizarCargaGuardada(ejercicioDb, re.porcentaje1RM, re.cargaKg);
         const { nota, advertenciaLesion } = perfilMotorActual
           ? engine.notasParaEjercicio(ejercicioDb, perfilMotorActual, user.idioma)
           : { nota: re.nota, advertenciaLesion: re.advertenciaLesion };
         return {
           rutinaEjercicioId: re.rutinaEjercicioId,
           exercise: engine.conNombreLocalizado(ejercicioDb, user.idioma),
-          series: re.series, repeticiones: re.repeticiones, porcentaje1RM: re.porcentaje1RM,
-          cargaKg: re.cargaKg, nota, advertenciaLesion,
+          series: re.series, repeticiones: re.repeticiones, porcentaje1RM: cargaSegura.porcentaje1RM,
+          cargaKg: cargaSegura.cargaKg, nota, advertenciaLesion,
           seriesRegistradas: registrosPorEjercicio.get(re.rutinaEjercicioId) || [],
         };
       });
