@@ -599,7 +599,7 @@ async function handleRequest(req, res) {
             .filter(Boolean)
         );
         const nuevaPrescripcion = engine
-          .generarDia(nombreDia, EXERCISE_DB, perfilMotorActual, user.idioma)
+          .generarDia(nombreDia, EXERCISE_DB, perfilMotorActual, user.idioma, fechaLocal)
           .map((p, orden) => ({ ...p, orden }))
           .filter((p) => !patronesIniciados.has(p.exercise.patron));
 
@@ -642,16 +642,17 @@ async function handleRequest(req, res) {
           exercise: engine.conNombreLocalizado(ejercicioDb, user.idioma),
           series: re.series, repeticiones: re.repeticiones, porcentaje1RM: cargaSegura.porcentaje1RM,
           cargaKg: cargaSegura.cargaKg, nota, advertenciaLesion,
+          ...engine.parametrosDeEjecucion(ejercicioDb, perfilMotorActual?.objetivo || "hipertrofia", perfilMotorActual?.nivel || "intermedio"),
           seriesRegistradas: registrosPorEjercicio.get(re.rutinaEjercicioId) || [],
         };
       });
       const supersetsSugeridos = engine.sugerirSupersets(ejerciciosGuardados, user.idioma);
-      return send(res, 200, { rutinaDiaId: rutinaDiaExistente.id, nombreDia, ejercicios: ejerciciosGuardados, supersetsSugeridos, rutinaActualizadaPorPerfil });
+      return send(res, 200, { rutinaDiaId: rutinaDiaExistente.id, nombreDia, objetivo: perfilMotorActual?.objetivo, nivel: perfilMotorActual?.nivel, ejercicios: ejerciciosGuardados, supersetsSugeridos, rutinaActualizadaPorPerfil });
     }
 
     const perfilMotor = await perfilParaMotor(user.id);
     if (!perfilMotor) return send(res, 404, { error: "sin_perfil", mensaje: "Completa tu perfil primero" });
-    const prescritosBase = engine.generarDia(nombreDia, EXERCISE_DB, perfilMotor, user.idioma);
+    const prescritosBase = engine.generarDia(nombreDia, EXERCISE_DB, perfilMotor, user.idioma, fechaLocal);
     const prescritos = await Promise.all(
       prescritosBase.map(async (p) => {
         const ultimo = await db.ultimoRegistroPorEjercicio(user.id, p.exercise.id);
@@ -679,7 +680,7 @@ async function handleRequest(req, res) {
       return { rutinaDiaId, ejerciciosGuardados };
     });
     const supersetsSugeridos = engine.sugerirSupersets(ejerciciosGuardados, user.idioma);
-    return send(res, 200, { rutinaDiaId, nombreDia, ejercicios: ejerciciosGuardados, supersetsSugeridos });
+    return send(res, 200, { rutinaDiaId, nombreDia, objetivo: perfilMotor.objetivo, nivel: perfilMotor.nivel, ejercicios: ejerciciosGuardados, supersetsSugeridos });
   }
 
   if (req.method === "GET" && url.pathname === "/v1/routines/schedule") {

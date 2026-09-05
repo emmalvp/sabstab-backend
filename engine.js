@@ -175,11 +175,40 @@ function accesoriosPorObjetivo(opcionales, objetivo) {
   return opcionales; // hipertrofia (default)
 }
 
-function seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile) {
+function hashEstable(valor) {
+  let hash = 2166136261;
+  for (const caracter of String(valor || "")) {
+    hash ^= caracter.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+// Los patrones principales conservan el compuesto más apropiado para que la
+// prescripción basada en 1RM siga siendo válida. Los accesorios y el core
+// rotan de forma determinista por fecha: una misma rutina no cambia al volver
+// a abrirla, pero Pallof press (u otro primer elemento del catálogo) deja de
+// aparecer automáticamente todos los días.
+const PATRONES_ROTATIVOS = new Set([
+  "core",
+  "extension_codo",
+  "abduccion_hombro",
+  "flexion_codo",
+  "elevacion_posterior_hombro",
+  "flexion_plantar",
+]);
+
+function seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile, claveRotacion = "") {
   const spec = PATRONES_POR_DIA[nombreDia];
   if (!spec) throw new Error(`Día desconocido: ${nombreDia}`);
   const disponibles = filtrarPorEquipo(filtrarPorLesiones(exerciseDB, profile.lesiones), profile.equipoDisponible);
-  const elegirUno = (patron) => disponibles.filter((ej) => ej.patron === patron).sort(esMasCompuesto)[0] || null;
+  const elegirUno = (patron) => {
+    const candidatos = disponibles.filter((ej) => ej.patron === patron).sort(esMasCompuesto);
+    if (candidatos.length === 0) return null;
+    if (!PATRONES_ROTATIVOS.has(patron) || candidatos.length === 1) return candidatos[0];
+    const indice = hashEstable(`${claveRotacion}:${nombreDia}:${patron}`) % candidatos.length;
+    return candidatos[indice];
+  };
 
   const requeridos = spec.requeridos.map((patron) => {
     const ej = elegirUno(patron);
@@ -253,6 +282,20 @@ function prescribirCarga(oneRMBase, objetivo, nivel, duracionSesionMin) {
   };
 }
 
+function parametrosDeEjecucion(ejercicio, objetivo, nivel) {
+  const compuesto = (ejercicio.musculosSecundarios?.length || 0) >= 2;
+  const rirObjetivo = nivel === "principiante" ? "3" : nivel === "avanzado" ? "1-2" : "2";
+  const descansoSeg = objetivo === "fuerza"
+    ? (compuesto ? 240 : 150)
+    : objetivo === "ambos"
+      ? (compuesto ? 180 : 120)
+      : (compuesto ? 150 : 90);
+  const seriesCalentamiento = compuesto
+    ? (nivel === "principiante" ? 2 : nivel === "avanzado" ? 3 : 2)
+    : 0;
+  return { rirObjetivo, descansoSeg, seriesCalentamiento };
+}
+
 // Copia superficial con el nombre en el idioma del usuario — nunca se muta
 // el objeto original de EXERCISE_DB (compartido entre requests).
 function conNombreLocalizado(ejercicio, idioma) {
@@ -281,8 +324,8 @@ function notasParaEjercicio(ejercicio, profile, idioma = "es") {
   };
 }
 
-function generarDia(nombreDia, exerciseDB, profile, idioma = "es") {
-  const ejercicios = seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile);
+function generarDia(nombreDia, exerciseDB, profile, idioma = "es", claveRotacion = "") {
+  const ejercicios = seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile, claveRotacion);
   return ejercicios.map((ej) => {
     const rm = oneRMRelevante(ej, profile.oneRM);
     const carga = prescribirCarga(rm, profile.objetivo, profile.nivel, profile.duracionSesionMin);
@@ -292,6 +335,7 @@ function generarDia(nombreDia, exerciseDB, profile, idioma = "es") {
       repeticiones: carga.repeticiones,
       porcentaje1RM: carga.porcentaje1RM,
       cargaKg: carga.cargaKg,
+      ...parametrosDeEjecucion(ej, profile.objetivo, profile.nivel),
       ...notasParaEjercicio(ej, profile, idioma),
     };
   });
@@ -532,5 +576,6 @@ module.exports = {
   notasParaEjercicio,
   oneRMRelevante,
   normalizarCargaGuardada,
+  parametrosDeEjecucion,
   SinEjerciciosDisponiblesError,
 };
