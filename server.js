@@ -625,6 +625,40 @@ async function handleRequest(req, res) {
         ]);
         rutinaActualizadaPorPerfil = true;
       }
+
+      // Las rutinas creadas antes de la rotación determinista podían guardar
+      // Pallof press como core para todos los días. Actualizamos únicamente
+      // filas que el usuario todavía no empezó; cualquier ejercicio con una
+      // serie registrada queda intacto para no reescribir su entrenamiento.
+      if (perfilMotorActual) {
+        const registrosActuales = agruparRegistrosPorEjercicio(registros);
+        const deseados = engine.generarDia(nombreDia, EXERCISE_DB, perfilMotorActual, user.idioma, fechaLocal);
+        const deseadoPorPatron = new Map(deseados.map((p) => [p.exercise.patron, p]));
+        let actualizoRotacion = false;
+        for (const fila of filas) {
+          if ((registrosActuales.get(fila.rutinaEjercicioId) || []).length > 0) continue;
+          const actual = EXERCISE_DB.find((e) => e.id === fila.ejercicioId);
+          if (!actual || !engine.esPatronRotativo(actual.patron)) continue;
+          const deseado = actual && deseadoPorPatron.get(actual.patron);
+          if (!deseado || deseado.exercise.id === fila.ejercicioId) continue;
+          await db.actualizarPrescripcionRutina(fila.rutinaEjercicioId, user.id, {
+            ejercicioId: deseado.exercise.id,
+            series: deseado.series,
+            repeticiones: deseado.repeticiones,
+            porcentaje1RM: deseado.porcentaje1RM,
+            cargaKg: deseado.cargaKg,
+            notaBiomecanica: deseado.nota,
+            advertenciaLesion: deseado.advertenciaLesion,
+          });
+          actualizoRotacion = true;
+        }
+        if (actualizoRotacion) {
+          [filas, registros] = await Promise.all([
+            db.ejerciciosDeRutinaDia(rutinaDiaExistente.id),
+            db.registrosDeRutinaDia(rutinaDiaExistente.id),
+          ]);
+        }
+      }
       const registrosPorEjercicio = agruparRegistrosPorEjercicio(registros);
       // nota/advertenciaLesion NO se leen de lo guardado en DB: son texto
       // dependiente del idioma y del perfil vigente (lesiones), y se

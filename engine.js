@@ -197,6 +197,9 @@ const PATRONES_ROTATIVOS = new Set([
   "elevacion_posterior_hombro",
   "flexion_plantar",
 ]);
+function esPatronRotativo(patron) {
+  return PATRONES_ROTATIVOS.has(patron);
+}
 
 function seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile, claveRotacion = "") {
   const spec = PATRONES_POR_DIA[nombreDia];
@@ -205,7 +208,7 @@ function seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile, claveRotaci
   const elegirUno = (patron) => {
     const candidatos = disponibles.filter((ej) => ej.patron === patron).sort(esMasCompuesto);
     if (candidatos.length === 0) return null;
-    if (!PATRONES_ROTATIVOS.has(patron) || candidatos.length === 1) return candidatos[0];
+    if (!esPatronRotativo(patron) || candidatos.length === 1) return candidatos[0];
     const indice = hashEstable(`${claveRotacion}:${nombreDia}:${patron}`) % candidatos.length;
     return candidatos[indice];
   };
@@ -577,5 +580,6 @@ module.exports = {
   oneRMRelevante,
   normalizarCargaGuardada,
   parametrosDeEjecucion,
+  esPatronRotativo,
   SinEjerciciosDisponiblesError,
 };
