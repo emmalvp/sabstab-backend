@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { EXERCISE_DB, generarDia, generarPlanCardio, oneRMRelevante, normalizarCargaGuardada, parametrosDeEjecucion } = require("./engine");
+const { EXERCISE_DB, generarDia, generarPlanCardio, generarProgramaSemanal, oneRMRelevante, normalizarCargaGuardada, parametrosDeEjecucion } = require("./engine");
 
 function ejercicio(id) {
   const encontrado = EXERCISE_DB.find((item) => item.id === id);
@@ -91,4 +91,50 @@ test("hypertrophy and fat-loss leg days add knee extension and flexion when mach
   assert.ok(patterns.includes("bisagra_cadera"));
   assert.ok(patterns.includes("extension_rodilla"));
   assert.ok(patterns.includes("flexion_rodilla"));
+});
+
+test("weekly split stays balanced at every supported training frequency", () => {
+  assert.deepEqual(generarProgramaSemanal(3).filter((d) => !d.descanso).map((d) => d.tipo), ["Empuje", "Tiron", "Piernas"]);
+  assert.deepEqual(generarProgramaSemanal(4).filter((d) => !d.descanso).map((d) => d.tipo), ["Torso", "Piernas", "Torso", "Piernas"]);
+  assert.deepEqual(generarProgramaSemanal(5).filter((d) => !d.descanso).map((d) => d.tipo), ["Empuje", "Tiron", "Piernas", "Torso", "Piernas"]);
+  assert.deepEqual(generarProgramaSemanal(6).filter((d) => !d.descanso).map((d) => d.tipo), ["Empuje", "Tiron", "Piernas", "Empuje", "Tiron", "Piernas"]);
+});
+
+test("complete gym uses stable gym resistance while home never leaks machines or cables", () => {
+  const base = { antropometria: {}, lesiones: [], objetivo: "hipertrofia", nivel: "intermedio", duracionSesionMin: 60, oneRM };
+  const full = generarDia("Torso", EXERCISE_DB, { ...base, equipoDisponible: ["barra", "mancuerna", "polea", "maquina", "peso_corporal", "banda"] }, "es", "2026-09-06");
+  assert.ok(full.slice(0, 4).every((item) => item.exercise.equipoNecesario.every((eq) => ["maquina", "polea"].includes(eq))));
+  const homeAllowed = new Set(["barra", "mancuerna", "banda", "peso_corporal"]);
+  const home = generarDia("Torso", EXERCISE_DB, { ...base, equipoDisponible: [...homeAllowed] }, "es", "2026-09-06");
+  assert.ok(home.every((item) => item.exercise.equipoNecesario.every((eq) => homeAllowed.has(eq))));
+  for (let day = 1; day <= 14; day++) {
+    const routine = generarDia("Torso", EXERCISE_DB, { ...base, equipoDisponible: ["barra", "mancuerna", "polea", "maquina", "peso_corporal", "banda"] }, "es", `2026-09-${String(day).padStart(2, "0")}`);
+    assert.ok(routine.every((item) => !item.exercise.equipoNecesario.includes("banda")), "full gym should not fall back to bands when machines and cables exist");
+  }
+});
+
+test("long-limbed hypertrophy profiles receive stable variants when equipment permits", () => {
+  const profile = { antropometria: { femurCm: 55, torsoCm: 45, brazoCm: 60 }, lesiones: [], objetivo: "hipertrofia", nivel: "intermedio", duracionSesionMin: 60, equipoDisponible: ["barra", "mancuerna", "polea", "maquina", "peso_corporal", "banda"], oneRM };
+  const legs = generarDia("Piernas", EXERCISE_DB, profile, "es", "2026-09-06");
+  assert.ok(["sentadilla_hack_maquina", "prensa_piernas_45"].includes(legs[0].exercise.id));
+  const upper = generarDia("Torso", EXERCISE_DB, profile, "es", "2026-09-06");
+  assert.equal(upper[0].exercise.id, "press_maquina_pecho_convergente");
+});
+
+test("muscle-building days include enough distinct chest work without duplicating an exercise", () => {
+  const profile = { antropometria: {}, lesiones: [], objetivo: "hipertrofia", nivel: "intermedio", duracionSesionMin: 60, equipoDisponible: ["barra", "mancuerna", "polea", "maquina", "peso_corporal", "banda"], oneRM };
+  for (const day of ["Empuje", "Torso"]) {
+    const routine = generarDia(day, EXERCISE_DB, profile, "es", "2026-09-06");
+    const chestSets = routine.filter((item) => item.exercise.musculoPrimario === "pecho").reduce((sum, item) => sum + item.series, 0);
+    assert.ok(chestSets >= 6);
+    assert.equal(new Set(routine.map((item) => item.exercise.id)).size, routine.length);
+  }
+});
+
+test("short sessions keep major patterns and cap accessories to fit the promised time", () => {
+  const profile = { antropometria: {}, lesiones: [], objetivo: "hipertrofia", nivel: "intermedio", duracionSesionMin: 30, equipoDisponible: ["barra", "mancuerna", "polea", "maquina", "peso_corporal", "banda"], oneRM };
+  const upper = generarDia("Torso", EXERCISE_DB, profile, "es", "2026-09-06");
+  assert.equal(upper.length, 5);
+  assert.deepEqual(upper.slice(0, 4).map((item) => item.exercise.patron), ["empuje_horizontal", "traccion_horizontal", "empuje_vertical", "traccion_vertical"]);
+  assert.ok(upper.every((item) => item.series === 2));
 });

@@ -158,7 +158,11 @@ calendario semanal devuelve `dia_sin_pesas`.
 Calcula, a partir de `diasPorSemana` del perfil vigente, qué días de una
 semana de 7 (0=lunes … 6=domingo) son de entreno y cuáles de descanso —
 repartidos lo más parejo posible (mismo principio que un ritmo euclidiano)
-para no juntar sesiones seguidas sin recuperación. También decide si es
+para no juntar sesiones seguidas sin recuperación. El split se adapta a la
+frecuencia: cuerpo completo para 1–2 días, empuje/tirón/piernas para 3 y 6,
+torso/pierna para 4, y PPL más torso/pierna para 5. Así ninguna selección
+semanal deja grupos musculares fuera o repite empuje de forma desbalanceada.
+También decide si es
 momento de cambiar de rutina: por tiempo (≥ 6 semanas con el mismo perfil,
 el rango típico de un mesociclo antes de que aparezca *accommodation*) o por
 estancamiento (el 1RM de algún levantamiento no subió en al menos 3 semanas

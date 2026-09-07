@@ -28,7 +28,7 @@ const EXERCISE_DB = JSON.parse(
 const PATRONES_POR_DIA = {
   Empuje: {
     requeridos: ["empuje_horizontal", "empuje_vertical", "extension_codo", "core"],
-    opcionales: ["abduccion_hombro"],
+    opcionales: ["empuje_horizontal", "abduccion_hombro"],
   },
   Tiron: {
     requeridos: ["traccion_horizontal", "traccion_vertical", "core"],
@@ -37,6 +37,14 @@ const PATRONES_POR_DIA = {
   Piernas: {
     requeridos: ["sentadilla", "bisagra_cadera", "flexion_plantar", "core"],
     opcionales: ["extension_rodilla", "flexion_rodilla"],
+  },
+  Torso: {
+    requeridos: ["empuje_horizontal", "traccion_horizontal", "empuje_vertical", "traccion_vertical"],
+    opcionales: ["empuje_horizontal", "extension_codo", "flexion_codo"],
+  },
+  CuerpoCompleto: {
+    requeridos: ["sentadilla", "bisagra_cadera", "empuje_horizontal", "traccion_horizontal", "traccion_vertical", "core"],
+    opcionales: [],
   },
 };
 
@@ -189,10 +197,34 @@ const PRIORIDAD_EQUIPO = { barra: 0, mancuerna: 1, maquina: 2, polea: 3, banda: 
 function prioridadEquipo(ejercicio) {
   return Math.min(...ejercicio.equipoNecesario.map((eq) => PRIORIDAD_EQUIPO[eq] ?? 6));
 }
-function esMasCompuesto(a, b) {
-  const diff = (b.musculosSecundarios?.length || 0) - (a.musculosSecundarios?.length || 0);
-  if (diff !== 0) return diff;
-  return prioridadEquipo(a) - prioridadEquipo(b);
+function puntajeSeleccion(ejercicio, profile) {
+  const equipo = profile.equipoDisponible || [];
+  const gymCompleto = equipo.includes("maquina") || equipo.includes("polea");
+  const orientadoAMasa = ["hipertrofia", "perdida_grasa"].includes(profile.objetivo);
+  const orden = gymCompleto && orientadoAMasa
+    ? { maquina: 0, polea: 1, mancuerna: 2, barra: 3, peso_corporal: 4, banda: 5 }
+    : { barra: 0, mancuerna: 1, maquina: 2, polea: 3, banda: 4, peso_corporal: 5 };
+  let score = Math.min(...ejercicio.equipoNecesario.map((eq) => orden[eq] ?? 6)) * 20;
+  score -= (ejercicio.musculosSecundarios?.length || 0) * 3;
+
+  // Con fémur relativamente largo, una trayectoria guiada en gimnasio o
+  // una carga anterior en casa reduce la demanda de equilibrio y permite
+  // entrenar cuádriceps sin obligar a copiar la sentadilla de otra persona.
+  const a = profile.antropometria || {};
+  const femurLargo = a.femurCm && a.torsoCm && a.femurCm / a.torsoCm > 1.05;
+  if (orientadoAMasa && femurLargo && ejercicio.patron === "sentadilla") {
+    if (["sentadilla_hack_maquina", "prensa_piernas_45"].includes(ejercicio.id)) score -= 35;
+    if (["sentadilla_frontal_barra", "sentadilla_goblet"].includes(ejercicio.id)) score -= 18;
+  }
+  const brazoLargo = a.brazoCm && a.torsoCm && a.brazoCm / a.torsoCm > 1.15;
+  if (orientadoAMasa && brazoLargo && ejercicio.patron === "empuje_horizontal") {
+    if (["press_maquina_pecho_convergente", "press_mancuernas_plano"].includes(ejercicio.id)) score -= 20;
+  }
+  return score;
+}
+
+function compararCandidatos(a, b, profile) {
+  return puntajeSeleccion(a, profile) - puntajeSeleccion(b, profile) || prioridadEquipo(a) - prioridadEquipo(b) || a.id.localeCompare(b.id);
 }
 
 // Cuántos patrones accesorios (opcionales) incluir según el objetivo —
@@ -201,10 +233,15 @@ function esMasCompuesto(a, b) {
 // Strength, 5/3/1) minimiza accesorios y prioriza el/los compuestos
 // principales; hipertrofia (Schoenfeld, Israetel/RP) se beneficia de más
 // volumen distribuido en accesorios; "ambos" es un punto medio.
-function accesoriosPorObjetivo(opcionales, objetivo) {
+function accesoriosPorObjetivo(opcionales, objetivo, duracionSesionMin) {
   if (objetivo === "fuerza") return [];
-  if (objetivo === "ambos") return opcionales.slice(0, Math.ceil(opcionales.length / 2));
-  return opcionales; // hipertrofia (default)
+  let elegidos = objetivo === "ambos" ? opcionales.slice(0, Math.ceil(opcionales.length / 2)) : opcionales;
+  // Una rutina completa también tiene que caber en el tiempo prometido.
+  // En sesiones cortas conservamos todos los patrones grandes y recortamos
+  // accesorios antes que convertir 30 minutos en una sesión irreal de una hora.
+  if (duracionSesionMin <= 30) elegidos = elegidos.slice(0, 1);
+  else if (duracionSesionMin <= 45) elegidos = elegidos.slice(0, 2);
+  return elegidos;
 }
 
 function hashEstable(valor) {
@@ -237,12 +274,23 @@ function seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile, claveRotaci
   const spec = PATRONES_POR_DIA[nombreDia];
   if (!spec) throw new Error(`Día desconocido: ${nombreDia}`);
   const disponibles = filtrarPorEquipo(filtrarPorLesiones(exerciseDB, profile.lesiones), profile.equipoDisponible);
+  const seleccionados = new Set();
   const elegirUno = (patron) => {
-    const candidatos = disponibles.filter((ej) => ej.patron === patron).sort(esMasCompuesto);
+    const candidatos = disponibles.filter((ej) => ej.patron === patron && !seleccionados.has(ej.id)).sort((a, b) => compararCandidatos(a, b, profile));
     if (candidatos.length === 0) return null;
-    if (!esPatronRotativo(patron) || candidatos.length === 1) return candidatos[0];
-    const indice = hashEstable(`${claveRotacion}:${nombreDia}:${patron}`) % candidatos.length;
-    return candidatos[indice];
+    if (!esPatronRotativo(patron) || candidatos.length === 1) {
+      seleccionados.add(candidatos[0].id);
+      return candidatos[0];
+    }
+    // Rotar no debe ignorar el entorno. Limitamos la rotación a variantes
+    // cercanas a la mejor puntuación: en gimnasio no salta aleatoriamente
+    // de una máquina/polea disponible a una banda; en casa conserva las
+    // alternativas domésticas que sí pertenecen a ese contexto.
+    const mejorPuntaje = puntajeSeleccion(candidatos[0], profile);
+    const preferidos = candidatos.filter((ej) => puntajeSeleccion(ej, profile) <= mejorPuntaje + 20);
+    const indice = hashEstable(`${claveRotacion}:${nombreDia}:${patron}`) % preferidos.length;
+    seleccionados.add(preferidos[indice].id);
+    return preferidos[indice];
   };
 
   const requeridos = spec.requeridos.map((patron) => {
@@ -250,7 +298,7 @@ function seleccionarEjerciciosDelDia(nombreDia, exerciseDB, profile, claveRotaci
     if (!ej) throw new SinEjerciciosDisponiblesError(patron);
     return ej;
   });
-  const patronesOpcionales = accesoriosPorObjetivo(spec.opcionales, profile.objetivo);
+  const patronesOpcionales = accesoriosPorObjetivo(spec.opcionales, profile.objetivo, profile.duracionSesionMin);
   const opcionales = patronesOpcionales.map(elegirUno).filter(Boolean);
   return [...requeridos, ...opcionales];
 }
@@ -462,7 +510,14 @@ function sugerirSupersets(prescritos, idioma = "es") {
 // exactamente N veces en 7 pasos, separados lo más parejo que permite la
 // aritmética entera). Espaciar el entreno evita juntar sesiones seguidas del
 // mismo grupo muscular sin recuperación. diaSemana: 0=lunes … 6=domingo.
-const CICLO_SPLIT = ["Empuje", "Tiron", "Piernas"];
+function splitPorFrecuencia(diasPorSemana) {
+  if (diasPorSemana <= 2) return Array(diasPorSemana).fill("CuerpoCompleto");
+  if (diasPorSemana === 3) return ["Empuje", "Tiron", "Piernas"];
+  if (diasPorSemana === 4) return ["Torso", "Piernas", "Torso", "Piernas"];
+  if (diasPorSemana === 5) return ["Empuje", "Tiron", "Piernas", "Torso", "Piernas"];
+  if (diasPorSemana === 6) return ["Empuje", "Tiron", "Piernas", "Empuje", "Tiron", "Piernas"];
+  return ["Empuje", "Tiron", "Piernas", "Empuje", "Tiron", "Piernas", "CuerpoCompleto"];
+}
 // diasDescansoPreferidos: array opcional de días ISO (0=lunes...6=domingo)
 // que el usuario eligió como descanso — si viene y calza con diasPorSemana
 // (validado en server.js), se respeta tal cual en vez del reparto parejo
@@ -470,6 +525,7 @@ const CICLO_SPLIT = ["Empuje", "Tiron", "Piernas"];
 // calendario para asignarles el split (empuje/tirón/piernas).
 function generarProgramaSemanal(diasPorSemana, diasDescansoPreferidos = null) {
   const n = Math.min(7, Math.max(1, diasPorSemana));
+  const split = splitPorFrecuencia(n);
   const descansoManual =
     Array.isArray(diasDescansoPreferidos) && diasDescansoPreferidos.length === 7 - n ? new Set(diasDescansoPreferidos) : null;
   let entrenoIndex = 0;
@@ -477,7 +533,7 @@ function generarProgramaSemanal(diasPorSemana, diasDescansoPreferidos = null) {
   for (let d = 0; d < 7; d++) {
     const esEntreno = descansoManual ? !descansoManual.has(d) : Math.floor(((d + 1) * n) / 7) > Math.floor((d * n) / 7);
     if (esEntreno) {
-      programa.push({ diaSemana: d, tipo: CICLO_SPLIT[entrenoIndex % CICLO_SPLIT.length], descanso: false });
+      programa.push({ diaSemana: d, tipo: split[entrenoIndex], descanso: false });
       entrenoIndex++;
     } else {
       programa.push({ diaSemana: d, tipo: null, descanso: true });
