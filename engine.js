@@ -72,6 +72,16 @@ function generarPlanCardio(profile, nombreDia = null) {
   if (profile?.objetivo !== "perdida_grasa") return null;
   const dosis = CARDIO_POR_NIVEL[profile.nivel] || CARDIO_POR_NIVEL.principiante;
   const esDescanso = !nombreDia;
+  const gimnasioCompleto = (profile.equipoDisponible || []).some((equipo) => ["maquina", "polea"].includes(equipo));
+  const lesionInferiorActiva = (profile.lesiones || []).some((lesion) =>
+    ["activa", "en_rehabilitacion"].includes(lesion.estado)
+      && ["rodilla", "cadera", "espalda_baja"].includes(lesion.zona)
+  );
+  let prescripcionId;
+  if (nombreDia === "Piernas") prescripcionId = "bajo_impacto_piernas";
+  else if (esDescanso && profile.nivel === "avanzado" && !lesionInferiorActiva) prescripcionId = "alto_impacto_intervalos_opcional";
+  else if (gimnasioCompleto) prescripcionId = `bajo_impacto_gym_${profile.nivel || "principiante"}`;
+  else prescripcionId = `bajo_impacto_casa_${profile.nivel || "principiante"}`;
   return {
     intensidadRpeMin: 5,
     intensidadRpeMax: 6,
@@ -83,6 +93,8 @@ function generarPlanCardio(profile, nombreDia = null) {
     hoyMax: esDescanso ? dosis.descansoMax : dosis.fuerzaMax,
     colocacion: esDescanso ? "dia_sin_pesas" : nombreDia === "Piernas" ? "piernas_suave_o_separado" : "despues_o_separado",
     progresionMinPorSemana: profile.nivel === "principiante" ? 5 : null,
+    prescripcionId,
+    impacto: prescripcionId.startsWith("alto_impacto") ? "alto_opcional" : "bajo",
   };
 }
 

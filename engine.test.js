@@ -79,6 +79,16 @@ test("cardio plan is only prescribed for the fat-loss goal and scales by level",
   const advanced = generarPlanCardio({ objetivo: "perdida_grasa", nivel: "avanzado" }, "Empuje");
   assert.ok(advanced.semanalMin > intermediate.semanalMin);
   assert.equal(intermediate.colocacion, "despues_o_separado");
+  assert.equal(intermediate.prescripcionId, "bajo_impacto_casa_intermedio");
+});
+
+test("cardio modality respects lifting day, equipment, level, and active lower-body injuries", () => {
+  const gym = ["barra", "mancuerna", "polea", "maquina", "peso_corporal"];
+  assert.equal(generarPlanCardio({ objetivo: "perdida_grasa", nivel: "principiante", equipoDisponible: gym }, "Empuje").prescripcionId, "bajo_impacto_gym_principiante");
+  assert.equal(generarPlanCardio({ objetivo: "perdida_grasa", nivel: "avanzado", equipoDisponible: gym }, "Piernas").prescripcionId, "bajo_impacto_piernas");
+  assert.equal(generarPlanCardio({ objetivo: "perdida_grasa", nivel: "avanzado", equipoDisponible: gym }, null).prescripcionId, "alto_impacto_intervalos_opcional");
+  const conRodillaActiva = { objetivo: "perdida_grasa", nivel: "avanzado", equipoDisponible: gym, lesiones: [{ zona: "rodilla", estado: "activa" }] };
+  assert.equal(generarPlanCardio(conRodillaActiva, null).prescripcionId, "bajo_impacto_gym_avanzado");
 });
 
 test("hypertrophy and fat-loss leg days add knee extension and flexion when machines are available", () => {

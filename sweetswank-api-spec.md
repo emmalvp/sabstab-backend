@@ -142,7 +142,9 @@ del usuario y la tabla `ejercicios` completa, guarda el resultado en
     "hoyMin": 25,
     "hoyMax": 40,
     "colocacion": "despues_o_separado",
-    "progresionMinPorSemana": null
+    "progresionMinPorSemana": null,
+    "prescripcionId": "bajo_impacto_gym_intermedio",
+    "impacto": "bajo"
   }
 }
 ```
@@ -151,6 +153,10 @@ del usuario y la tabla `ejercicios` completa, guarda el resultado en
 caso mantiene la rutina de fuerza y añade cardio moderado progresivo según el
 nivel. En piernas devuelve `piernas_suave_o_separado`; en días sin pesas, el
 calendario semanal devuelve `dia_sin_pesas`.
+`prescripcionId` permite a la app mostrar una modalidad y parámetros concretos
+según nivel, equipo, colocación y lesiones. Los intervalos de alto impacto son
+solo una opción avanzada en días sin pesas y se excluyen ante lesión activa de
+rodilla, cadera o espalda baja.
 
 ### `GET /routines/:rutinaDiaId` — releer una rutina ya generada (no recalcula)
 
