@@ -1028,7 +1028,7 @@
     {
       "id": "extension_cuadriceps_maquina",
       "nombre": "Extensión de cuádriceps en máquina",
-      "patron": "sentadilla",
+      "patron": "extension_rodilla",
       "musculoPrimario": "cuadriceps",
       "musculosSecundarios": [],
       "anguloGrados": 90,
@@ -1248,7 +1248,7 @@
     {
       "id": "curl_femoral_tumbado",
       "nombre": "Curl femoral tumbado en máquina",
-      "patron": "bisagra_cadera",
+      "patron": "flexion_rodilla",
       "musculoPrimario": "isquiotibiales",
       "musculosSecundarios": [],
       "anguloGrados": 90,

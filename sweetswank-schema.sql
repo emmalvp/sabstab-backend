@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS perfiles (
   envergadura_cm    NUMERIC(5,1),
   edad              SMALLINT CHECK (edad BETWEEN 13 AND 100),
   peso_corporal_kg  NUMERIC(5,1) CHECK (peso_corporal_kg > 0),
-  objetivo          TEXT NOT NULL CHECK (objetivo IN ('hipertrofia', 'fuerza', 'ambos')),
+  objetivo          TEXT NOT NULL CHECK (objetivo IN ('hipertrofia', 'fuerza', 'ambos', 'perdida_grasa')),
   nivel             TEXT NOT NULL CHECK (nivel IN ('principiante', 'intermedio', 'avanzado')),
   dias_por_semana   SMALLINT NOT NULL CHECK (dias_por_semana BETWEEN 1 AND 7),
   dias_descanso_preferidos SMALLINT[], -- días ISO (0=lunes..6=domingo) elegidos como descanso; NULL = reparto automático parejo
@@ -54,6 +54,9 @@ CREATE INDEX IF NOT EXISTS idx_perfiles_user_vigente ON perfiles(user_id) WHERE 
 ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS edad SMALLINT CHECK (edad BETWEEN 13 AND 100);
 ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS peso_corporal_kg NUMERIC(5,1) CHECK (peso_corporal_kg > 0);
 ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS dias_descanso_preferidos SMALLINT[];
+ALTER TABLE perfiles DROP CONSTRAINT IF EXISTS perfiles_objetivo_check;
+ALTER TABLE perfiles ADD CONSTRAINT perfiles_objetivo_check
+  CHECK (objetivo IN ('hipertrofia', 'fuerza', 'ambos', 'perdida_grasa'));
 
 -- ---------------------------------------------------------------------
 -- 3. LESIONES (una fila por lesión, un usuario puede tener varias)
@@ -96,7 +99,8 @@ CREATE TABLE IF NOT EXISTS ejercicios (
                             'traccion_horizontal', 'traccion_vertical',
                             'sentadilla', 'bisagra_cadera', 'core',
                             'extension_codo', 'abduccion_hombro', 'flexion_codo',
-                            'elevacion_posterior_hombro', 'flexion_plantar')),
+                            'elevacion_posterior_hombro', 'flexion_plantar',
+                            'extension_rodilla', 'flexion_rodilla')),
   musculo_primario      TEXT NOT NULL,
   musculos_secundarios  TEXT[] NOT NULL DEFAULT '{}',
   angulo_grados         SMALLINT NOT NULL,
@@ -121,7 +125,8 @@ ALTER TABLE ejercicios ADD CONSTRAINT ejercicios_patron_check CHECK (patron IN (
   'traccion_horizontal', 'traccion_vertical',
   'sentadilla', 'bisagra_cadera', 'core',
   'extension_codo', 'abduccion_hombro', 'flexion_codo',
-  'elevacion_posterior_hombro', 'flexion_plantar'
+  'elevacion_posterior_hombro', 'flexion_plantar',
+  'extension_rodilla', 'flexion_rodilla'
 ));
 
 -- ---------------------------------------------------------------------

@@ -55,7 +55,7 @@ curl -X PUT http://localhost:4000/v1/profile \
     "antropometria": {"alturaCm":178,"femurCm":46.2,"torsoCm":42,"brazoCm":62},
     "oneRM": {"sentadilla":140,"pressBanca":100,"pesoMuerto":180,"pressMilitar":60},
     "lesiones": [],
-    "objetivo":"hipertrofia","nivel":"intermedio","diasPorSemana":4,"duracionSesionMin":60,
+    "objetivo":"perdida_grasa","nivel":"intermedio","diasPorSemana":4,"duracionSesionMin":60,
     "equipoDisponible":["barra","mancuerna","polea","maquina","peso_corporal"]
   }'
 

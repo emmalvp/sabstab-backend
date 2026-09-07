@@ -22,6 +22,10 @@ async function migrar() {
   await pool.query(`ALTER TABLE rutinas_dia ADD COLUMN IF NOT EXISTS perfil_id UUID REFERENCES perfiles(id)`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_rutinas_dia_usuario_fecha ON rutinas_dia(user_id, nombre_dia, fecha_local)`);
   await pool.query(`ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS dias_descanso_preferidos SMALLINT[]`);
+  await pool.query(`ALTER TABLE perfiles DROP CONSTRAINT IF EXISTS perfiles_objetivo_check`);
+  await pool.query(
+    `ALTER TABLE perfiles ADD CONSTRAINT perfiles_objetivo_check CHECK (objetivo IN ('hipertrofia','fuerza','ambos','perdida_grasa'))`
+  );
   await pool.query(`ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS postura TEXT`);
   await pool.query(`ALTER TABLE ejercicios DROP CONSTRAINT IF EXISTS ejercicios_postura_check`);
   await pool.query(
@@ -33,7 +37,8 @@ async function migrar() {
     'traccion_horizontal', 'traccion_vertical',
     'sentadilla', 'bisagra_cadera', 'core',
     'extension_codo', 'abduccion_hombro', 'flexion_codo',
-    'elevacion_posterior_hombro', 'flexion_plantar'
+    'elevacion_posterior_hombro', 'flexion_plantar',
+    'extension_rodilla', 'flexion_rodilla'
   ))`);
   await sembrarEjercicios();
 }

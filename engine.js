@@ -36,7 +36,7 @@ const PATRONES_POR_DIA = {
   },
   Piernas: {
     requeridos: ["sentadilla", "bisagra_cadera", "flexion_plantar", "core"],
-    opcionales: [],
+    opcionales: ["extension_rodilla", "flexion_rodilla"],
   },
 };
 
@@ -44,7 +44,39 @@ const RANGOS_POR_OBJETIVO = {
   fuerza: { pctMin: 0.85, pctMax: 0.95, series: 4, repMin: 3, repMax: 6 },
   hipertrofia: { pctMin: 0.65, pctMax: 0.8, series: 3, repMin: 8, repMax: 12 },
   ambos: { pctMin: 0.75, pctMax: 0.85, series: 4, repMin: 6, repMax: 10 },
+  // En pérdida de grasa conservamos una prescripción de fuerza orientada a
+  // mantener masa muscular. El déficit energético y el bloque de cardio se
+  // manejan aparte; bajar mucho la carga o convertir las pesas en cardio
+  // quitaría justamente el estímulo que queremos preservar.
+  perdida_grasa: { pctMin: 0.65, pctMax: 0.8, series: 3, repMin: 8, repMax: 12 },
 };
+
+// Dosis progresiva de cardio moderado (RPE 5-6/10, todavía permite hablar).
+// Un principiante empieza por debajo del mínimo poblacional y progresa: es
+// preferible adherencia sostenible a imponer 150 min desde la primera semana.
+const CARDIO_POR_NIVEL = {
+  principiante: { semanalMin: 90, semanalMax: 150, sesionesMin: 3, sesionesMax: 3, fuerzaMin: 20, fuerzaMax: 30, descansoMin: 30, descansoMax: 40 },
+  intermedio: { semanalMin: 150, semanalMax: 210, sesionesMin: 3, sesionesMax: 4, fuerzaMin: 25, fuerzaMax: 40, descansoMin: 35, descansoMax: 50 },
+  avanzado: { semanalMin: 210, semanalMax: 300, sesionesMin: 4, sesionesMax: 5, fuerzaMin: 30, fuerzaMax: 45, descansoMin: 40, descansoMax: 60 },
+};
+
+function generarPlanCardio(profile, nombreDia = null) {
+  if (profile?.objetivo !== "perdida_grasa") return null;
+  const dosis = CARDIO_POR_NIVEL[profile.nivel] || CARDIO_POR_NIVEL.principiante;
+  const esDescanso = !nombreDia;
+  return {
+    intensidadRpeMin: 5,
+    intensidadRpeMax: 6,
+    semanalMin: dosis.semanalMin,
+    semanalMax: dosis.semanalMax,
+    sesionesMin: dosis.sesionesMin,
+    sesionesMax: dosis.sesionesMax,
+    hoyMin: esDescanso ? dosis.descansoMin : dosis.fuerzaMin,
+    hoyMax: esDescanso ? dosis.descansoMax : dosis.fuerzaMax,
+    colocacion: esDescanso ? "dia_sin_pesas" : nombreDia === "Piernas" ? "piernas_suave_o_separado" : "despues_o_separado",
+    progresionMinPorSemana: profile.nivel === "principiante" ? 5 : null,
+  };
+}
 
 function estimate1RM(pesoKg, reps) {
   if (!pesoKg || !reps) return null;
@@ -566,6 +598,7 @@ module.exports = {
   EXERCISE_DB,
   estimate1RM,
   generarDia,
+  generarPlanCardio,
   buscarAlternativas,
   ajustarProximaCarga,
   redondearCarga,

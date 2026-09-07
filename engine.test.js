@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { EXERCISE_DB, generarDia, oneRMRelevante, normalizarCargaGuardada, parametrosDeEjecucion } = require("./engine");
+const { EXERCISE_DB, generarDia, generarPlanCardio, oneRMRelevante, normalizarCargaGuardada, parametrosDeEjecucion } = require("./engine");
 
 function ejercicio(id) {
   const encontrado = EXERCISE_DB.find((item) => item.id === id);
@@ -58,4 +58,37 @@ test("effort targets distinguish experience levels without prescribing failure",
   assert.equal(parametrosDeEjecucion(press, "hipertrofia", "intermedio").rirObjetivo, "2");
   assert.equal(parametrosDeEjecucion(press, "hipertrofia", "avanzado").rirObjetivo, "1-2");
   assert.ok(parametrosDeEjecucion(press, "fuerza", "avanzado").descansoSeg >= 180);
+});
+
+test("fat-loss goal preserves strength work and adds progressive cardio", () => {
+  const profile = {
+    antropometria: {}, lesiones: [], objetivo: "perdida_grasa", nivel: "principiante",
+    duracionSesionMin: 60, equipoDisponible: ["barra", "mancuerna", "peso_corporal"], oneRM,
+  };
+  const routine = generarDia("Empuje", EXERCISE_DB, profile, "es", "2026-09-06");
+  assert.ok(routine.length >= 4);
+  assert.equal(routine[0].series, 2);
+  assert.match(routine[0].repeticiones, /^8-12$/);
+  assert.deepEqual(generarPlanCardio(profile, "Piernas").colocacion, "piernas_suave_o_separado");
+  assert.equal(generarPlanCardio(profile, null).hoyMin, 30);
+});
+
+test("cardio plan is only prescribed for the fat-loss goal and scales by level", () => {
+  assert.equal(generarPlanCardio({ objetivo: "fuerza", nivel: "avanzado" }, "Empuje"), null);
+  const intermediate = generarPlanCardio({ objetivo: "perdida_grasa", nivel: "intermedio" }, "Empuje");
+  const advanced = generarPlanCardio({ objetivo: "perdida_grasa", nivel: "avanzado" }, "Empuje");
+  assert.ok(advanced.semanalMin > intermediate.semanalMin);
+  assert.equal(intermediate.colocacion, "despues_o_separado");
+});
+
+test("hypertrophy and fat-loss leg days add knee extension and flexion when machines are available", () => {
+  const profile = {
+    antropometria: {}, lesiones: [], objetivo: "perdida_grasa", nivel: "intermedio",
+    duracionSesionMin: 60, equipoDisponible: ["barra", "mancuerna", "maquina", "peso_corporal"], oneRM,
+  };
+  const patterns = generarDia("Piernas", EXERCISE_DB, profile, "es", "2026-09-06").map((item) => item.exercise.patron);
+  assert.ok(patterns.includes("sentadilla"));
+  assert.ok(patterns.includes("bisagra_cadera"));
+  assert.ok(patterns.includes("extension_rodilla"));
+  assert.ok(patterns.includes("flexion_rodilla"));
 });

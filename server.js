@@ -257,6 +257,8 @@ function validarPerfilRequest(body) {
   return faltantes;
 }
 
+const OBJETIVOS_VALIDOS = new Set(["hipertrofia", "fuerza", "ambos", "perdida_grasa"]);
+
 // diasDescansoPreferidos es opcional — si viene, tiene que ser exactamente
 // los días de descanso que le tocan a diasPorSemana (7 - diasPorSemana),
 // sin repetidos y dentro de 0-6 (lunes-domingo ISO). Si no calza, se ignora
@@ -504,6 +506,9 @@ async function handleRequest(req, res) {
     if (faltantes.length > 0) {
       return send(res, 400, { error: "datos_incompletos", mensaje: `Faltan campos: ${faltantes.join(", ")}` });
     }
+    if (!OBJETIVOS_VALIDOS.has(body.objetivo)) {
+      return send(res, 400, { error: "datos_invalidos", mensaje: "objetivo no reconocido" });
+    }
     if (!diasDescansoValidos(body.diasDescansoPreferidos, body.diasPorSemana)) {
       return send(res, 400, { error: "datos_invalidos", mensaje: "diasDescansoPreferidos no coincide con diasPorSemana" });
     }
@@ -681,7 +686,8 @@ async function handleRequest(req, res) {
         };
       });
       const supersetsSugeridos = engine.sugerirSupersets(ejerciciosGuardados, user.idioma);
-      return send(res, 200, { rutinaDiaId: rutinaDiaExistente.id, nombreDia, objetivo: perfilMotorActual?.objetivo, nivel: perfilMotorActual?.nivel, ejercicios: ejerciciosGuardados, supersetsSugeridos, rutinaActualizadaPorPerfil });
+      const cardioPlan = engine.generarPlanCardio(perfilMotorActual, nombreDia);
+      return send(res, 200, { rutinaDiaId: rutinaDiaExistente.id, nombreDia, objetivo: perfilMotorActual?.objetivo, nivel: perfilMotorActual?.nivel, ejercicios: ejerciciosGuardados, supersetsSugeridos, cardioPlan, rutinaActualizadaPorPerfil });
     }
 
     const perfilMotor = await perfilParaMotor(user.id);
@@ -714,7 +720,8 @@ async function handleRequest(req, res) {
       return { rutinaDiaId, ejerciciosGuardados };
     });
     const supersetsSugeridos = engine.sugerirSupersets(ejerciciosGuardados, user.idioma);
-    return send(res, 200, { rutinaDiaId, nombreDia, objetivo: perfilMotor.objetivo, nivel: perfilMotor.nivel, ejercicios: ejerciciosGuardados, supersetsSugeridos });
+    const cardioPlan = engine.generarPlanCardio(perfilMotor, nombreDia);
+    return send(res, 200, { rutinaDiaId, nombreDia, objetivo: perfilMotor.objetivo, nivel: perfilMotor.nivel, ejercicios: ejerciciosGuardados, supersetsSugeridos, cardioPlan });
   }
 
   if (req.method === "GET" && url.pathname === "/v1/routines/schedule") {
@@ -747,6 +754,9 @@ async function handleRequest(req, res) {
       revisionActiva: semanasEnRutinaActual >= 4,
       sugerenciaCambiarRutina: motivoCambio !== null,
       motivoCambio,
+      objetivo: perfil.objetivo,
+      nivel: perfil.nivel,
+      cardioPlan: engine.generarPlanCardio(perfil, null),
     });
   }
 
@@ -773,7 +783,14 @@ async function handleRequest(req, res) {
         seriesRegistradas: registrosPorEjercicio.get(re.rutinaEjercicioId) || [],
       };
     });
-    return send(res, 200, { rutinaDiaId: rutinaDia.id, nombreDia: rutinaDia.nombreDia, ejercicios });
+    return send(res, 200, {
+      rutinaDiaId: rutinaDia.id,
+      nombreDia: rutinaDia.nombreDia,
+      objetivo: perfilMotorActual?.objetivo,
+      nivel: perfilMotorActual?.nivel,
+      ejercicios,
+      cardioPlan: engine.generarPlanCardio(perfilMotorActual, rutinaDia.nombreDia),
+    });
   }
 
   if (req.method === "PATCH" && url.pathname.startsWith("/v1/routines/exercises/")) {

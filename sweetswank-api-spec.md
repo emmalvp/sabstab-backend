@@ -88,7 +88,7 @@ sobrescribe una fila existente.
   "lesiones": [
     { "zona": "hombro", "lado": "derecho", "estado": "resuelta_con_precaucion", "movimientoQueAgrava": "" }
   ],
-  "objetivo": "hipertrofia",
+  "objetivo": "perdida_grasa",
   "nivel": "intermedio",
   "diasPorSemana": 4,
   "duracionSesionMin": 60,
@@ -122,6 +122,8 @@ del usuario y la tabla `ejercicios` completa, guarda el resultado en
 {
   "rutinaDiaId": "uuid",
   "nombreDia": "Empuje",
+  "objetivo": "perdida_grasa",
+  "nivel": "intermedio",
   "ejercicios": [
     {
       "rutinaEjercicioId": "uuid",
@@ -129,9 +131,26 @@ del usuario y la tabla `ejercicios` completa, guarda el resultado en
       "series": 3, "repeticiones": "8-12", "porcentaje1RM": 72, "cargaKg": 72,
       "nota": "", "advertenciaLesion": null
     }
-  ]
+  ],
+  "cardioPlan": {
+    "intensidadRpeMin": 5,
+    "intensidadRpeMax": 6,
+    "semanalMin": 150,
+    "semanalMax": 210,
+    "sesionesMin": 3,
+    "sesionesMax": 4,
+    "hoyMin": 25,
+    "hoyMax": 40,
+    "colocacion": "despues_o_separado",
+    "progresionMinPorSemana": null
+  }
 }
 ```
+
+`cardioPlan` es `null` salvo cuando `objetivo` es `perdida_grasa`. En ese
+caso mantiene la rutina de fuerza y añade cardio moderado progresivo según el
+nivel. En piernas devuelve `piernas_suave_o_separado`; en días sin pesas, el
+calendario semanal devuelve `dia_sin_pesas`.
 
 ### `GET /routines/:rutinaDiaId` — releer una rutina ya generada (no recalcula)
 
